@@ -5,18 +5,16 @@
 -export([fib_hr/1, fib_tr/1, time_fib/1, time_fib/0]).
 
 who_am_i() ->
-  { "Mark Greenstreet",
-    00000000,
-    "mrg@cs.ubc.ca"
+  { "Colin Stone",
+    31645112,
+    "colin@bunnylaundering.com"
   }.
 
 registration() -> enrolled.
 
-flatten(X) ->
-  if X == []        -> X;
-     is_list(X)     -> flatten(hd(X)) ++ flatten(tl(X));
-     not is_list(X) -> [X]
-  end.
+flatten([]) -> [];
+flatten([H | T]) -> flatten(H) ++ flatten(T);
+flatten(X) -> [X].
 
 reverse_hr([]) -> [];
 reverse_hr([H | T]) -> reverse_hr(T) ++ [H].
@@ -54,11 +52,17 @@ fib_hr(N) -> element(1, fib_pair_hr(N)).
 % fib_pair_hr(N) -> {fib(N), fib(N-1)}
 fib_pair_hr(1) -> {1, 0};
 fib_pair_hr(N) ->
-  {F1, F2} = fib_pair_hr(N-1), % F1 = fib(N-1), F2 = fib(N-1)
+  {F1, F2} = fib_pair_hr(N-1), % F1 = fib(N-1), F2 = fib(N-2)
   {F1 + F2, F1}.
 
 % Now for the tail-recursive version.
-fib_tr(N) -> ok.
+% fib_tr(N) -> fib_tr(N).
+fib_tr(N) -> fib_tr(N,1,0).
+
+fib_tr(0,_,_) -> 0;
+fib_tr(1,Acc1,_) -> Acc1;
+fib_tr(N,Acc1,Acc2) -> fib_tr(N-1,Acc1+Acc2,Acc1).
+
 
 time_fib(N) when is_integer(N) ->
   T0 = erlang:monotonic_time(),
@@ -74,3 +78,19 @@ time_fib(L) when is_list(L) ->
   [time_fib(N) || N <- L],
   ok.
 time_fib() -> time_fib([1000, 3000, 10000, 30000, 100000, 300000]).
+
+% 1> mini1:time_fib().
+% N =     1000: time fib_hr =   0.000243, time fib_tr =   0.000115
+% N =     3000: time fib_hr =   0.000771, time fib_tr =   0.000414
+% N =    10000: time fib_hr =   0.005212, time fib_tr =   0.005809
+% N =    30000: time fib_hr =   0.044163, time fib_tr =   0.023418
+% N =   100000: time fib_hr =   0.392291, time fib_tr =   0.252214
+% N =   300000: time fib_hr =   4.008604, time fib_tr =   2.208703
+% We observe that using tail recursion is usually faster than using head
+% recursion.
+% Head recursion uses more words on the stack because a new context is
+% stacked per recursive call. Tail recursion avoids this with a linear
+% process by using an extra temporary variable. When more memory is used, the
+% garbage collector is invoked more frequently and does more work traversing the
+% stack slowing down the program.
+% Source: http://www.erlang.org/doc/efficiency_guide/myths.html
