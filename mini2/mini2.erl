@@ -77,22 +77,22 @@ store3(Pid, Food) ->
 % fridge3a is an intermediate step in the problem.
 %   fridge3a handles 'store' messages with lists of Food tuples,
 %     and 'take' requests for single Food atoms.
-fridge3a(_FoodList) ->
-  io:format("~p: fridge3(~p)~n", [self(), _FoodList]),
+fridge3a(FoodList) ->
+  io:format("~p: fridge3(~p)~n", [self(), FoodList]),
   receive
     _Msg = {From, {store, Food}} ->
       io:format("~p: received ~p~n", [self(), _Msg]),
       From ! {self(), ok},
-      fridge3a(Food ++ _FoodList);
+      fridge3a(Food ++ FoodList);
     _Msg = {From, {take, Food}} ->
       io:format("~p: received ~p~n", [self(), _Msg]),
-      case lists:member(Food, _FoodList) of
+      case lists:member(Food, FoodList) of
         true ->
           From ! {self(), {ok, Food}},
-          fridge3a(lists:delete(Food, _FoodList));
+          fridge3a(lists:delete(Food, FoodList));
         false ->
           From ! {self(), not_found},
-          fridge3a(_FoodList)
+          fridge3a(FoodList)
       end;
     terminate ->
       ok
@@ -113,23 +113,23 @@ start3(FoodList) ->
     bad_food -> bad_food
   end.
 
-fridge3(_FoodList) ->
-  io:format("~p: fridge3(~p)~n", [self(), _FoodList]),
+fridge3(FoodList) ->
+  io:format("~p: fridge3(~p)~n", [self(), FoodList]),
   receive
     _Msg = {From, {store, Food}} ->
       io:format("~p: received ~p~n", [self(), _Msg]),
       From ! {self(), ok},
-      fridge3(Food ++ _FoodList);
+      fridge3(Food ++ FoodList);
     _Msg = {From, {take, Food}} when is_list(Food) ->
       io:format("~p: received ~p~n", [self(), _Msg]),
-      {Found, L} = removeFromList(Food, _FoodList, true),
+      {Found, L} = removeFromList(Food, FoodList, true),
       case Found of
         true ->
           From ! {self(), {ok, Food}},
           fridge3(L);
         false ->
           From ! {self(), not_found},
-          fridge3(_FoodList)
+          fridge3(FoodList)
       end;
     terminate ->
       ok
@@ -146,12 +146,12 @@ removeFromList([H|T], L, B) ->
   end.
 
 
-take3(_Pid, _Food) ->
-  case prepare(_Food) of
+take3(Pid, Food) ->
+  case prepare(Food) of
     L when is_list(L) ->
-      _Pid ! {self(), {take, L}},
+      Pid ! {self(), {take, L}},
       receive
-        {_Pid, Msg} -> Msg
+        {Pid, Msg} -> Msg
         after 3000 ->
           timeout
       end;
