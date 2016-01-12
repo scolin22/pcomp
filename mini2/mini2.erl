@@ -120,12 +120,13 @@ fridge3(FoodList) ->
       io:format("~p: received ~p~n", [self(), _Msg]),
       From ! {self(), ok},
       fridge3(Food ++ FoodList);
-    _Msg = {From, {take, Food}} when is_list(Food) ->
+    _Msg = {From, {take, F}} ->
+      Food = prepare(F),
       io:format("~p: received ~p~n", [self(), _Msg]),
       {Found, L} = removeFromList(Food, FoodList, true),
       case Found of
         true ->
-          From ! {self(), {ok, Food}},
+          From ! {self(), {ok, F}},
           fridge3(L);
         false ->
           From ! {self(), not_found},
@@ -149,7 +150,7 @@ removeFromList([H|T], L, B) ->
 take3(Pid, Food) ->
   case prepare(Food) of
     L when is_list(L) ->
-      Pid ! {self(), {take, L}},
+      Pid ! {self(), {take, Food}},
       receive
         {Pid, Msg} -> Msg
         after 3000 ->
