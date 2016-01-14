@@ -1,0 +1,29 @@
+2a)
+N =     1000: time lists:subtract =   0.007225
+N =     2000: time lists:subtract =   0.018668
+N =     3000: time lists:subtract =   0.044705
+N =     5000: time lists:subtract =   0.117455
+N =    10000: time lists:subtract =   0.490924
+N =    20000: time lists:subtract =   2.159227
+N =    30000: time lists:subtract =   4.541818
+
+2b)
+After plotting log(N) vs. log(runtime), we observe a straight-line relationship.
+This implies that the function runs in quadratic time. This is supported by
+analyzing the algorithm and finding that it runs in O(kn) where k is the length
+of the first list and n is the second list.
+
+2c)
+See the implementation for subtract() and tuple_subtract(). Based implementation
+ordsets:subtract().
+
+2d)
+N =     1000: time lists:subtract =   0.004784, time lists:subtract =   0.000513
+N =     2000: time lists:subtract =   0.021259, time lists:subtract =   0.001351
+N =     3000: time lists:subtract =   0.047412, time lists:subtract =   0.001336
+N =     5000: time lists:subtract =   0.122231, time lists:subtract =   0.002095
+N =    10000: time lists:subtract =   0.495767, time lists:subtract =   0.005458
+N =    20000: time lists:subtract =   1.987409, time lists:subtract =   0.013238
+N =    30000: time lists:subtract =   4.460186, time lists:subtract =   0.017535
+We observe that plotting N vs the time elapsed, we observe a nearly linear
+relationship. This corresponds to NlogN.
