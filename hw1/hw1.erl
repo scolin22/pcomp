@@ -16,18 +16,15 @@ prefix([H|T], List) when is_list(List) ->
             false
     end.
 
-search(List1, List2) when is_list(List1), is_list(List2) -> helper(List1, List2, [], 1).
-helper([], [], List0, N) -> lists:reverse([N | List0]);
+search(List1, List2) when is_list(List1), is_list(List2) -> helper(List1, List2, [], 0).
+helper([], [], List0, N) -> lists:reverse([N+1 | List0]);
 helper(_, [], List0, _) -> lists:reverse(List0);
 helper(List1, List2, List0, N) ->
-
+    [_|T2] = List2,
     case prefix(List1, List2) of
         true->
-            Off = max(length(List1), 1),
-            T2 = nthtail(Off, List2),
-            helper(List1, T2, [N | List0], N+Off);
+            helper(List1, T2, [N+1 | List0], N+1);
         false->
-            [_|T2] = List2,
             helper(List1, T2, List0, N+1)
     end.
 
