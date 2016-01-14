@@ -20,7 +20,6 @@ search(List1, List2) when is_list(List1), is_list(List2) -> helper(List1, List2,
 helper([], [], List0, N) -> lists:reverse([N | List0]);
 helper(_, [], List0, _) -> lists:reverse(List0);
 helper(List1, List2, List0, N) ->
-
     case prefix(List1, List2) of
         true->
             Off = max(length(List1), 1),
