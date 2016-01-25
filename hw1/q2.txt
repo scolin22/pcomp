@@ -25,5 +25,6 @@ N =     5000: time lists:subtract =   0.122231, time lists:subtract =   0.002095
 N =    10000: time lists:subtract =   0.495767, time lists:subtract =   0.005458
 N =    20000: time lists:subtract =   1.987409, time lists:subtract =   0.013238
 N =    30000: time lists:subtract =   4.460186, time lists:subtract =   0.017535
-We observe that plotting N vs the time elapsed, we observe a nearly linear
-relationship. This corresponds to NlogN.
+We observe that plotting N vs e^(Time/N), the resulting relation appears to be
+nearly constant relationship with minimal variation. This suggests that the
+elapsed time is bound by Nlog(N).
