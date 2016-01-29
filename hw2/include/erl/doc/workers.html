@@ -1,0 +1,409 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Module workers</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module workers</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>workers - create and manage a pool of worker processes.
+<p>Copyright © 2011 Mark R. Greenstreet</p>
+
+<p><b>Authors:</b> Mark R. Greenstreet (<a href="mailto:mrg@cs.ubc.ca"><tt>mrg@cs.ubc.ca</tt></a>).</p>
+
+<h2><a name="description">Description</a></h2><p>workers - create and manage a pool of worker processes.
+  Each worker process has a process state.  The process state is an
+  association list of tuples of the form <code>{Key, Value}</code>,
+  where <code>Key</code> and <code>Value</code> are arbitrary Erlang terms  
+When a process is created, this list is empty.</p>
+ 
+  Worker process wait to receive tasks.  The task is invoked on the
+  current state and returns a new state.
+ 
+<h2><a name="types">Data Types</a></h2>
+
+<h3 class="typedecl"><a name="type-worker_pool">worker_pool()</a></h3>
+<p><b>abstract datatype</b>: <tt>worker_pool()</tt></p>
+<p>Abstract type for a worker pool.</p>
+
+<h3 class="typedecl"><a name="type-worker_state">worker_state()</a></h3>
+<p><b>abstract datatype</b>: <tt>worker_state()</tt></p>
+<p>Abstract type for a worker process state.
+ </p>
+
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#alive-1">alive/1</a></td><td> Return true if all of the processes in worker_pool() are alive.</td></tr>
+<tr><td valign="top"><a href="#broadcast-2">broadcast/2</a></td><td>Each worker process performs Task.</td></tr>
+<tr><td valign="top"><a href="#broadcast-3">broadcast/3</a></td><td>Each worker process performs <code>Task</code>, where <code>Task</code>
+  is called with a per-worker argument.</td></tr>
+<tr><td valign="top"><a href="#create-0">create/0</a></td><td>Equivalent to <a href="#create-1"><tt>create(default_n())</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#create-1">create/1</a></td><td> Spawn <code>N</code> worker processes.</td></tr>
+<tr><td valign="top"><a href="#default_n-0">default_n/0</a></td><td> A default for the number of workers for a worker pool.</td></tr>
+<tr><td valign="top"><a href="#get-2">get/2</a></td><td>Equivalent to <a href="#get-3"><tt>get(S, Key, undefined)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#get-3">get/3</a></td><td>Get that value associated with <code>Key</code> in process state <code>S</code>.</td></tr>
+<tr><td valign="top"><a href="#initState-0">initState/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#keys-1">keys/1</a></td><td>return a list of all of the keys for association in <code>S</code></td></tr>
+<tr><td valign="top"><a href="#nworkers-1">nworkers/1</a></td><td> Return the number of workers in <code>W</code>.</td></tr>
+<tr><td valign="top"><a href="#put-2">put/2</a></td><td>Update state <code>S</code> so that each <code>Value</code> is
+    associated with its corresponding <code>Key</code>.</td></tr>
+<tr><td valign="top"><a href="#put-3">put/3</a></td><td>Update state <code>S</code> to associate <code>Value</code> with
+    <code>Key</code>.</td></tr>
+<tr><td valign="top"><a href="#random-2">random/2</a></td><td>Generate a random value.</td></tr>
+<tr><td valign="top"><a href="#random-3">random/3</a></td><td>Generate a list of N random values.</td></tr>
+<tr><td valign="top"><a href="#reap-1">reap/1</a></td><td> Terminate the worker processes of <code>W</code>.</td></tr>
+<tr><td valign="top"><a href="#retrieve-2">retrieve/2</a></td><td>
+  Each worker evaluates <code>Fun</code> and the results are returned.</td></tr>
+<tr><td valign="top"><a href="#retrieve-3">retrieve/3</a></td><td>Each worker evaluates <code>Fun</code>.</td></tr>
+<tr><td valign="top"><a href="#rlist-3">rlist/3</a></td><td>Equivalent to <a href="#rlist-4"><tt>rlist(W, N, 1.0, Key)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#rlist-4">rlist/4</a></td><td> Generate a pseudo-random list distributed amongst the workers of
+    worker pool W.</td></tr>
+<tr><td valign="top"><a href="#seq-4">seq/4</a></td><td>Equivalent to <a href="#seq-5"><tt>seq(W, Lo, Hi, 1, Key)</tt></a>.
+</td></tr>
+<tr><td valign="top"><a href="#seq-5">seq/5</a></td><td>Like <code>lists:seq/3</code>, but distributes the list over the workers of <code>W</code>.</td></tr>
+<tr><td valign="top"><a href="#update-3">update/3</a></td><td>
+  Each worker updates the value in its state (<code>S</code>) associated with
+  <code>Key</code> to the result of applying Fun.</td></tr>
+<tr><td valign="top"><a href="#update-4">update/4</a></td><td>
+  Each worker updates the value in its state (<code>S</code>) associated
+  with <code>Key</code> to the result of applying Fun.</td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="alive-1">alive/1</a></h3>
+<div class="spec">
+<p><tt>alive(W::<a href="#type-worker_pool">worker_pool()</a>) -&gt; true | false</tt><br></p>
+</div><p> Return true if all of the processes in worker_pool() are alive.</p>
+
+<h3 class="function"><a name="broadcast-2">broadcast/2</a></h3>
+<div class="spec">
+<p><tt>broadcast(W::<a href="#type-worker_pool">worker_pool()</a>, Task) -&gt; ok</tt>
+<ul class="definitions"><li><tt>Task = (fun((S::<a href="#type-worker_state">worker_state()</a>) -&gt; <a href="#type-worker_state">worker_state()</a>) | fun((S::<a href="#type-worker_state">worker_state()</a>, N::integer) -&gt; <a href="#type-worker_state">worker_state()</a>))</tt></li></ul></p>
+</div><p>Each worker process performs Task.
+  If
+  <ul>
+    <li><code>Task</code> is a function with arity 1,
+      then it is called with the current process state.
+      The process state is updated to the return value of <code>Task</code>.
+    </li>
+    <li><code>Task</code> is a function with arity 2,
+      then the first parameter is the current process state,
+      and the second parameter is the index of the process.
+      The process state is updated to the return value of <code>Task</code>.
+      Process indices range from 1 to
+      <code><a href="#nworkers-1">nworkers</a>(W)</code>.
+    </li>
+  </ul>
+  The value returned by <code>Task</code> becomes the new state
+  for the process.</p>
+
+<h3 class="function"><a name="broadcast-3">broadcast/3</a></h3>
+<div class="spec">
+<p><tt>broadcast(W::<a href="#type-worker_pool">worker_pool()</a>, Fun::Task, Args::List) -&gt; ok</tt>
+<ul class="definitions"><li><tt>Task = (fun((S::<a href="#type-worker_state">worker_state()</a>, Arg) -&gt; <a href="#type-worker_state">worker_state()</a>) | fun((S::<a href="#type-worker_state">worker_state()</a>, N::integer, Arg) -&gt; <a href="#type-worker_state">worker_state()</a>))</tt></li><li><tt><a name="type-length">length(Args)</a> = <a href="workers.html#type-nworkers">workers:nworkers</a>(W)</tt></li></ul></p>
+</div><p>Each worker process performs <code>Task</code>, where <code>Task</code>
+  is called with a per-worker argument.
+  If
+  <ul>
+    <li><code>Task</code> is a function with arity 2,
+      then it is called with the current process state and
+      <code><a href="http://www.erlang.org/doc/man/lists.html#nth-2">lists:nth</a>(N, Args)</code>,
+      where <code>N</code> is the index of the process in <code>W</code>.
+      Process indices range from 1 to
+      <code><a href="#nworkers-1">nworkers</a>(W)</code>.
+    </li>
+    <li><code>Task</code> is a function with arity 3, then the first
+      parameter is the current process state, the second parameter
+      is the index of the process, and the third parameter is
+      <code><a href="http://www.erlang.org/doc/man/lists.html#nth-2">lists:nth</a>(N, Args)</code>.
+    </li>
+  </ul>
+  The value returned by <code>Task</code> becomes the new state
+  for the process.</p>
+
+<h3 class="function"><a name="create-0">create/0</a></h3>
+<div class="spec">
+<p><tt>create() -&gt; <a href="#type-worker_pool">worker_pool()</a></tt><br></p>
+</div><p>Equivalent to <a href="#create-1"><tt>create(default_n())</tt></a>.</p>
+
+
+<h3 class="function"><a name="create-1">create/1</a></h3>
+<div class="spec">
+<p><tt>create(N::integer()) -&gt; <a href="#type-worker_pool">worker_pool()</a></tt><br></p>
+</div><p> Spawn <code>N</code> worker processes.</p>
+
+<h3 class="function"><a name="default_n-0">default_n/0</a></h3>
+<div class="spec">
+<p><tt>default_n() -&gt; integer()</tt><br></p>
+</div><p> A default for the number of workers for a worker pool.</p>
+
+<h3 class="function"><a name="get-2">get/2</a></h3>
+<div class="spec">
+<p><tt>get(S::<a href="#type-worker_state">worker_state()</a>, Key::term()) -&gt; term()</tt><br></p>
+</div><p>Equivalent to <a href="#get-3"><tt>get(S, Key, undefined)</tt></a>.</p>
+
+
+<h3 class="function"><a name="get-3">get/3</a></h3>
+<div class="spec">
+<p><tt>get(S, Key, DefaultFn) -&gt; term()</tt>
+<ul class="definitions"><li><tt>S = <a href="#type-worker_state">worker_state()</a></tt></li><li><tt>Key = term()</tt></li><li><tt>DefaultFn = (undefined | fun(() -&gt; term()) | fun((S::<a href="#type-worker_state">worker_state()</a>) -&gt; term()) | fun((S::<a href="#type-worker_state">worker_state()</a>, Key::<a href="#type-worker_state">worker_state()</a>) -&gt; term()))</tt></li></ul></p>
+</div><p>Get that value associated with <code>Key</code> in process state <code>S</code>.
+    Parameters:
+    <ul>
+       <li> <code>S</code>: The state of the worker process.
+       </li>
+       <li> <code>Key</code>: The key associated with the desired value.
+       </li>
+       <li> <code>DefaultFn</code>: If <code>S</code> associates no value with
+         <code>Key</code> then <code>DefaultFn</code> is used to determine the
+         result of <code>get(...)</code>.
+       </li>
+    </ul>
+    Result:
+      if there is a value associated with <code>Key</code> in <code>S</code>,
+      then that value is returned.  Otherwise, the return value is determined
+      by <code>DefaultFn</code>:
+      <ul>
+        <li> If <code>DefaultFn</code> is the atom <code>undefined</code>,
+          then return value is the atom <code>undefined</code>.
+        </li>
+        <li> If <code>DefaultFn</code> is a function with arity 0, then
+           the return value is <code>DefaultFn()</code>.
+        </li>
+        <li> If <code>DefaultFn</code> is a function with arity 1, then
+           the return value is <code>DefaultFn(S)</code>.
+        </li>
+        <li> If <code>DefaultFn</code> is a function with arity 3, then
+           the return value is <code>DefaultFn(S, Key)</code>.</li>
+        <li> If <code>DefaultFn</code> does not match any of these patterns,
+           then an error is thrown.
+        </li>
+      </ul></p>
+
+<h3 class="function"><a name="initState-0">initState/0</a></h3>
+<div class="spec">
+<p><tt>initState() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="keys-1">keys/1</a></h3>
+<div class="spec">
+<p><tt>keys(S::<a href="#type-worker_state">worker_state()</a>) -&gt; [term()]</tt><br></p>
+</div><p>return a list of all of the keys for association in <code>S</code></p>
+
+<h3 class="function"><a name="nworkers-1">nworkers/1</a></h3>
+<div class="spec">
+<p><tt>nworkers(W::<a href="#type-worker_pool">worker_pool()</a>) -&gt; integer()</tt><br></p>
+</div><p> Return the number of workers in <code>W</code>.</p>
+
+<h3 class="function"><a name="put-2">put/2</a></h3>
+<div class="spec">
+<p><tt>put(S, Tail::TupleList) -&gt; <a href="#type-worker_state">worker_state()</a></tt>
+<ul class="definitions"><li><tt>S = <a href="#type-worker_state">worker_state()</a></tt></li><li><tt>TupleList = [{Key::term(), Value::term()}]</tt></li></ul></p>
+</div><p>Update state <code>S</code> so that each <code>Value</code> is
+    associated with its corresponding <code>Key</code>.</p>
+
+<h3 class="function"><a name="put-3">put/3</a></h3>
+<div class="spec">
+<p><tt>put(S::<a href="#type-worker_state">worker_state()</a>, Key::term(), Value::term()) -&gt; <a href="#type-worker_state">worker_state()</a></tt><br></p>
+</div><p>Update state <code>S</code> to associate <code>Value</code> with
+    <code>Key</code>.</p>
+
+<h3 class="function"><a name="random-2">random/2</a></h3>
+<div class="spec">
+<p><tt>random(M, S0) -&gt; {RandomValue, S1}</tt>
+<ul class="definitions"><li><tt>M = number()</tt></li><li><tt>S0 = <a href="#type-worker_state">worker_state()</a></tt></li><li><tt>RandomValue = number()</tt></li><li><tt>S1 = <a href="#type-worker_state">worker_state()</a></tt></li></ul></p>
+</div><p>Generate a random value.
+    Parameters:
+    <ul>
+       <li> <code>M</code>: Specifies the range for random values ad described below</li>
+       <li> <code>S0</code>: The process state.</li>
+    </ul>
+    Result:
+    <ul>
+      <li> <code>RandomValue</code>
+         <ul>
+           <li> If <code>is_integer(M)</code>, then <code>RandomValue</code>
+ 		will be an integer uniformly chosen from 1..M.
+ 	    </li>
+ 	    <li> If <code>is_float(M)</code>, then <code>RandomValue</code>
+ 		will be an float uniformly chosen in [0, M].
+ 	    </li>
+         </ul>
+      </li>
+      <li> <code>S1</code>: The new process state.
+        <br>We update the random number generator state so that
+        successive calls to <code>random</code> will produce different
+        values.
+       </li>
+    </ul></p>
+
+<h3 class="function"><a name="random-3">random/3</a></h3>
+<div class="spec">
+<p><tt>random(N, M, S0) -&gt; {RandomList, S1}</tt>
+<ul class="definitions"><li><tt>N = integer()</tt></li><li><tt>M = number()</tt></li><li><tt>S0 = <a href="#type-worker_state">worker_state()</a></tt></li><li><tt>RandomList = number()</tt></li><li><tt>S1 = <a href="#type-worker_state">worker_state()</a></tt></li></ul></p>
+</div><p>Generate a list of N random values.
+    <code>RandomList</code> is a list of <code>N</code> random numbers uniformly
+    chosen according to <code>M</code>.
+    <ul>
+      <li> If <code>is_integer(M)</code>, then <code>RandomValue</code>
+ 	    will be an integer uniformly chosen from 1..M.
+      </li>
+      <li> If <code>is_float(M)</code>, then <code>RandomValue</code>
+ 	    will be an float uniformly chosen in [0, M].
+      </li>
+    </ul>
+    The state for the random-number generator is obtained from the worker process
+    state, <code>S0</code>, and the updated state (new value for the random number
+    generator state) is returned in <code>S1</code>.</p>
+
+<h3 class="function"><a name="reap-1">reap/1</a></h3>
+<div class="spec">
+<p><tt>reap(W::<a href="#type-worker_pool">worker_pool()</a>) -&gt; ok</tt><br></p>
+</div><p> Terminate the worker processes of <code>W</code>.</p>
+
+<h3 class="function"><a name="retrieve-2">retrieve/2</a></h3>
+<div class="spec">
+<p><tt>retrieve(W::<a href="#type-worker_pool">worker_pool()</a>, X) -&gt; Values</tt>
+<ul class="definitions"><li><tt>X = (fun((S::<a href="#type-worker_state">worker_state()</a>) -&gt; term()) | fun((S::<a href="#type-worker_state">worker_state()</a>, N::integer()) -&gt; term()) | term())</tt></li><li><tt>Values = [term()]</tt></li></ul></p>
+</div><p>
+  Each worker evaluates <code>Fun</code> and the results are returned.
+  The return value of retrieve(W, Fun, Args)
+  is a list whose <code>N</code>th element is the result of applying
+  <code>Fun</code> in the <code>N</code>th process.
+  If
+  <ul>
+    <li><code>X</code> is a function with arity 1,
+      then it is called with the current process state.
+    </li>
+    <li> <code>X</code> is a function with arity 2,
+      then the first parameter is the current process state,
+      and the second parameter is the index of the process.
+    </li>
+    <li>Otherwise, <code>X</code> is taken as the key for looking
+      up a value in the state of each worker process.
+      If no match is found, then the atom <code>'undefined'</code>
+      is returned.
+    </li>
+  </ul></p>
+
+<h3 class="function"><a name="retrieve-3">retrieve/3</a></h3>
+<div class="spec">
+<p><tt>retrieve(W::<a href="#type-worker_pool">worker_pool()</a>, Fun, Args::List) -&gt; Values</tt>
+<ul class="definitions"><li><tt>Fun = (fun((S::<a href="#type-worker_state">worker_state()</a>, Arg) -&gt; term()) | fun((S::<a href="#type-worker_state">worker_state()</a>, N::integer(), Arg) -&gt; term))</tt></li><li><tt>Values = [term()]</tt></li></ul></p>
+</div><p><p>Each worker evaluates <code>Fun</code>.
+  The return value of <code>retrieve(W, Fun, Args)</code>
+  is a list whose <code>N</code>th element is the result of applying
+  <code>Fun</code> in the <code>N</code>th process.</p>
+ 
+  If <code>Fun</code> has arity 2, then it is called with the current process
+  state and
+  <code><a href="http://www.erlang.org/doc/man/lists.html#nth-2">lists:nth</a>(N, Args)</code>,
+  where <code>N</code> is the index of the process in <code>W</code>.
+  If <code>Fun</code> has arity 3, then the first parameter is the current process state,
+  the second parameter is the index of the process, and the third parameter is
+  <code><a href="http://www.erlang.org/doc/man/lists.html#nth-2">lists:nth</a>(N, Args)</code>.</p>
+
+<h3 class="function"><a name="rlist-3">rlist/3</a></h3>
+<div class="spec">
+<p><tt>rlist(W, N, Key) -&gt; ok</tt>
+<ul class="definitions"><li><tt>W = <a href="#type-worker_pool">worker_pool()</a></tt></li><li><tt>N = integer()</tt></li><li><tt>Key = term()</tt></li></ul></p>
+</div><p>Equivalent to <a href="#rlist-4"><tt>rlist(W, N, 1.0, Key)</tt></a>.</p>
+
+
+<h3 class="function"><a name="rlist-4">rlist/4</a></h3>
+<div class="spec">
+<p><tt>rlist(W, N, M, Key) -&gt; ok</tt>
+<ul class="definitions"><li><tt>W = <a href="#type-worker_pool">worker_pool()</a></tt></li><li><tt>N = integer()</tt></li><li><tt>M = number()</tt></li><li><tt>Key = term()</tt></li></ul></p>
+</div><p> Generate a pseudo-random list distributed amongst the workers of
+    worker pool W.  N is the total number of elements in the list.
+    <ul>
+      <li> if M is an integer, then each element is uniformly distributed
+ 	      in 1..M.</li>
+      <li> if M is a float, then each element is uniformly distributed
+ 	      in [0, M].</li>
+    </ul></p>
+
+<h3 class="function"><a name="seq-4">seq/4</a></h3>
+<div class="spec">
+<p><tt>seq(W, Lo, Hi, Key) -&gt; ok</tt><br></p>
+</div><p>Equivalent to <a href="#seq-5"><tt>seq(W, Lo, Hi, 1, Key)</tt></a>.</p>
+
+
+<h3 class="function"><a name="seq-5">seq/5</a></h3>
+<div class="spec">
+<p><tt>seq(W, Lo, Hi, Stride, Key) -&gt; ok</tt><br></p>
+</div><p>Like <code>lists:seq/3</code>, but distributes the list over the workers of <code>W</code>.
+    Generate a list distributed amongst the workers of
+    worker pool <code>W</code> that has the elements
+    <code>Lo</code>...<code>Hi</code> with a stride of <code>Stride</code>
+    <ul>
+      <li> <code>W</code> is a worker pool.</li>
+      <li> <code>Lo</code>, <code>Hi</code>, and <code>Stride</code> must
+ 	      be integers with <code>Lo =&lt; Hi</code> and <code>Stride /= 0</code>.
+      </li>
+      <li> The list produced by <code>seq</code> is associated with the
+ 	      key <code>Key</code>.
+      </li>
+    </ul>
+    For example, if <code>W</code> has 4 worker processes, then</p>
+
+<h3 class="function"><a name="update-3">update/3</a></h3>
+<div class="spec">
+<p><tt>update(W::<a href="#type-worker_pool">worker_pool()</a>, Key::term(), X) -&gt; ok</tt>
+<ul class="definitions"><li><tt>Fun = (fun((S::<a href="#type-worker_state">worker_state()</a>) -&gt; term()) | fun((S::<a href="#type-worker_state">worker_state()</a>, N::integer()) -&gt; term()) | [term()])</tt></li><li><tt>Values = [term()]</tt></li></ul></p>
+</div><p>
+  Each worker updates the value in its state (<code>S</code>) associated with
+  <code>Key</code> to the result of applying Fun.  If there is no entry in
+  the current state for <code>Key</code>, then an entry is created.
+  If
+  <ul>
+    <li><code>X</code> is a function with arity 1, then it is called with the current process state.</li>
+    <li><code>X</code> is a function with arity 2,
+      then it is called with the current process state and the index
+      of the process.
+    </li>
+    <li><code>X</code> is a list, then
+      <code><a href="http://www.erlang.org/doc/man/erlang.html#length-1">length</a>(X)</code>
+      must be the same as the number of workers in <code>W</code>
+      (i.e. <code><a href="#nworkers-1">nworkers</a>(W)</code>).
+      In this case, the value for <code>Key</code> in worker
+      <code>N</code> is updated to the value of
+      <code><a href="http://www.erlang.org/doc/man/lists.html#nth-2">lists:nth</a>(N, Args)</code>.
+    </li>
+  </ul></p>
+
+<h3 class="function"><a name="update-4">update/4</a></h3>
+<div class="spec">
+<p><tt>update(W::<a href="#type-worker_pool">worker_pool()</a>, Key::term(), Fun, Args) -&gt; ok</tt>
+<ul class="definitions"><li><tt>Fun = (fun((S::<a href="#type-worker_state">worker_state()</a>, Arg) -&gt; term()) | fun((S::<a href="#type-worker_state">worker_state()</a>, N::integer(), Arg) -&gt; term()) | term())</tt></li><li><tt>Values = [term()]</tt></li></ul></p>
+</div><p>
+  Each worker updates the value in its state (<code>S</code>) associated
+  with <code>Key</code> to the result of applying Fun.  If there is not entry
+  in the current state for <code>Key</code>, then an entry is created.
+  If
+   <ul>
+     <li><code>Fun</code> has arity 2,
+       then it is called with the current process state and
+        <code><a href="http://www.erlang.org/doc/man/lists.html#nth-2">lists:nth</a>(N, Args)</code>,
+       where <code>N</code> is the index of the process in <code>W</code>.
+     </li>
+     <li><code>Fun</code> has arity 3,
+       then the first parameter is the current process state,
+       the second parameter is the index of the process, <code>N</code>,
+       and the third parameter is
+       <code><a href="http://www.erlang.org/doc/man/lists.html#nth-2">lists:nth</a>(N, Args)</code>.
+    </li>
+  </ul></p>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc, Sep 22 2013, 13:02:08.</i></p>
+</body>
+</html>

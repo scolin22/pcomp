@@ -1,11 +1,12 @@
-
 -module(hw2).
 
--export [pi/0, degree_to_radian/1, radian_to_degree/1, move_pos/2, move_par/4].
--export [rle/1, longest_run/3].
--export [match_count/2, best_match/2, best_match_par/3].
+-export([pi/0, degree_to_radian/1, radian_to_degree/1, move_pos/2, move_par/4]).
+-export([rle/1, longest_run/3]).
+-export([match_count/2, best_match/2, best_match_par/3]).
 
 -import(fp, [fuzzy_match/3, floor/1, ceiling/1]).
+
+-import(wtree, [get/2, put/3]).
 
 % pi from Wolfram Alpha
 pi() -> 3.1415926535897932384626433832795028841971693993751058.
@@ -41,17 +42,22 @@ move_pos(Pos, [MoveH | MoveTail]) ->
 %   indicated by InitPos.  The position after each move is stored
 %   in the list associated with PosKey.  move_par returns the final
 %   position of the traveller.
+
 move_par(W, InitPos, MoveKey, PosKey) ->
   wtree:scan(W,
     fun(ProcState) ->
-      move_pos({0, 0, 0}, wtree:get(ProcState, MoveKey)) end,
+      move_pos({0,0,0}, wtree:get(ProcState, MoveKey))
+    end,
     fun(ProcState, AccIn) ->
-      wtree:put(ProcState, PosKey, ),
-    fun(Left, Right) ->
-      move_pos({0, 0, 0}, [Left | Right])
+      wtree:put(ProcState, PosKey, move_pos(AccIn, wtree:get(ProcState, MoveKey)))
+    end,
+    fun({LX,LY,LA}, {RX,RY,RA}) ->
+      X = RX*math:cos(LA) - RY*math:sin(LA),
+      Y = RX*math:sin(LA) + RY*math:cos(LA),
+      {LX+X,LY+Y,LA+RA}
     end,
     InitPos
-    )
+    ).
 
 % rle: run-length encoding
 %   Convert a list of values in to a list of {Value, Count} pairs.
