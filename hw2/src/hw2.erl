@@ -1,6 +1,7 @@
 -module(hw2).
 
 -export([pi/0, degree_to_radian/1, radian_to_degree/1, move_pos/2, move_par/4]).
+-export([test_move/0]).
 -export([rle/1, longest_run/3]).
 -export([match_count/2, best_match/2, best_match_par/3]).
 
@@ -42,6 +43,13 @@ move_pos(Pos, [MoveH | MoveTail]) ->
 %   indicated by InitPos.  The position after each move is stored
 %   in the list associated with PosKey.  move_par returns the final
 %   position of the traveller.
+
+test_move() ->
+  W = wtree:create(2),
+  workers:update(W, raw_data, [[{90,1},{90,1}],[{90,1},{90,1}]]),
+  InitPos = {0,0,0},
+  move_par(W, InitPos, raw_data, cooked_data),
+  workers:retrieve(W, cooked_data).
 
 move_par(W, InitPos, MoveKey, PosKey) ->
   wtree:scan(W,
