@@ -1,7 +1,7 @@
 -module(hw2).
 
--export([pi/0, degree_to_radian/1, radian_to_degree/1, move_pos/2, move_par/4]).
--export([test_move/0]).
+-export([pi/0, degree_to_radian/1, radian_to_degree/1, move_pos/2, move_par/4, combine/2]).
+-export([test_move_par/0, test_move_pos/0]).
 -export([rle/1, longest_run/3]).
 -export([match_count/2, best_match/2, best_match_par/3]).
 
@@ -44,12 +44,29 @@ move_pos(Pos, [MoveH | MoveTail]) ->
 %   in the list associated with PosKey.  move_par returns the final
 %   position of the traveller.
 
-test_move() ->
-  W = wtree:create(2),
-  workers:update(W, raw_data, [[{90,1},{90,1}],[{90,1},{90,1}]]),
+test_move_par() ->
+  W = wtree:create(4),
+  workers:update(W, raw_data, [{90,1},{90,1},{90,1},{90,1}]),
   InitPos = {0,0,0},
   move_par(W, InitPos, raw_data, cooked_data),
   workers:retrieve(W, cooked_data).
+
+test_move_pos() ->
+  InitPos = {0,0,0},
+  Moves = [{90,1},{90,1},{90,1},{90,1}],
+  test_move_pos(InitPos, Moves).
+test_move_pos(P, [H|T]) ->
+  New_P = move_pos(P, H),
+  io:format("~p~n", [New_P]),
+  test_move_pos(New_P, T);
+test_move_pos(_, []) ->
+  ok.
+
+combine({LX,LY,LA}, {RX,RY,RA}) ->
+  Rad_LA = degree_to_radian(LA),
+  X = RX*math:cos(Rad_LA) - RY*math:sin(Rad_LA),
+  Y = RX*math:sin(Rad_LA) + RY*math:cos(Rad_LA),
+  {LX+X,LY+Y,LA+RA}.
 
 move_par(W, InitPos, MoveKey, PosKey) ->
   wtree:scan(W,
@@ -59,10 +76,8 @@ move_par(W, InitPos, MoveKey, PosKey) ->
     fun(ProcState, AccIn) ->
       wtree:put(ProcState, PosKey, move_pos(AccIn, wtree:get(ProcState, MoveKey)))
     end,
-    fun({LX,LY,LA}, {RX,RY,RA}) ->
-      X = RX*math:cos(LA) - RY*math:sin(LA),
-      Y = RX*math:sin(LA) + RY*math:cos(LA),
-      {LX+X,LY+Y,LA+RA}
+    fun(Left, Right) ->
+      combine(Left, Right)
     end,
     InitPos
     ).

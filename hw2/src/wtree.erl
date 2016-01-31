@@ -1,5 +1,5 @@
 %% =====================================================================
-%% @copyright 2011 Mark R. Greenstreet
+%% @copyright 2016 Mark R. Greenstreet
 %% @author Mark R. Greenstreet <mrg@cs.ubc.ca>
 %% @end
 %% =====================================================================
@@ -24,8 +24,8 @@
 
 -export [alive/1, broadcast/3, children/1, create/1, create/0, init/1,
          nworkers/1, parent/1, reap/1, reduce/3, reduce/4,
-	 scan/5, set_debug_timeout/2, test/0, test_reduce/0, test_scan/0].
-
+	 scan/5, set_debug_timeout/2, test/0, test_reduce/0, test_scan/0,
+	 put/2, put/3, get/2, get/3, rlist/3, rlist/4, barrier/1].
 
 %% @spec create(N::integer()) -> worker_pool()
 %% @doc Create a worker-pool of <code>N</code> processes and
@@ -153,7 +153,6 @@ bcast(ProcState, Task, Args, Index, []) ->
       io:format("Trying to recover~n"),
       ProcState
   end.
-
 
 %% @spec reduce(W, Leaf, Combine, Root) -> term2()
 %%    W = worker_pool(),
@@ -345,6 +344,12 @@ scan_receive(Pid, PS) ->
 debug_timeout(PS) ->
   workers:get(PS, {'$wtree$', debug_timeout}, fun() -> infinity end).
 
+%% @spec barrier(W) -> ok
+%% @doc A barrier for worker-pool <code>W</code>.
+barrier(W) ->
+  reduce(W, fun(_) -> ok end, fun(_,_) -> ok end),
+  ok.
+
 %% @spec set_debug_timeout(W, T) -> ok
 %%   W = worker_pool(),
 %%   T = integer() | infinity
@@ -354,6 +359,35 @@ set_debug_timeout(W, T) ->
   workers:update(W, {'$wtree$', debug_timeout}, fun() -> T end),
   ok.
 
+%% I'll add get, put, and rlist so wtree provides one-stop shopping.
+
+%% @spec get(ProcState, Key, Default) -> term()
+%% @equiv workers:get(ProcState, Key, Default)
+get(ProcState, Key, Default) -> workers:get(ProcState, Key, Default).
+
+%% @spec get(ProcState, Key) -> term()
+%% @equiv workers:get(ProcState, Key)
+get(ProcState, Key) -> workers:get(ProcState, Key).
+
+
+%% @spec put(ProcState, Key, Value) -> NewProcState
+%% @equiv workers:put(ProcState, Key, Value)
+put(ProcState, Key, Value) -> workers:put(ProcState, Key, Value).
+
+%% @spec put(ProcState, TupleList) -> NewProcState
+%% @equiv workers:put(ProcState, TupleList)
+put(ProcState, TupleList) -> workers:put(ProcState, TupleList).
+
+%% @spec rlist(W, N, M, Key) -> ok
+%% @equiv  workers:rlist(W, N, M, Key)
+rlist(W, N, M, Key) -> workers:rlist(W, N, M, Key).
+
+%% @spec rlist(W, N, Key) -> ok
+%% @equiv workers:rlist(W, N, Key)
+rlist(W, N, Key) -> workers:rlist(W, N, Key).
+
+
+%% TODO: rewrite these using EUnit.
 test_reduce() ->
   NWorkers = 12,
   Block = 5,
