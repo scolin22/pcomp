@@ -3,7 +3,7 @@
 -export([pi/0, degree_to_radian/1, radian_to_degree/1, move_pos/2, move_par/4, combine/2]).
 -export([test_move_par/0, test_move_pos/0, test_rle/0, rlep/1]).
 -export([rle/1, longest_run/3, traverse/2, traverse_pos/2, combine_max/2, leaf/2, max_tup/3]).
--export([match_count/2, best_match/2, best_match_par/3]).
+-export([match_count/2, best_match/2, best_match/3, best_match_par/3]).
 
 -import(fp, [fuzzy_match/3, floor/1, ceiling/1]).
 
@@ -206,7 +206,6 @@ match_count(_, [], C) -> C;
 match_count([H | T1], [H | T2], C) -> match_count(T1, T2, C+1);
 match_count([_ | T1], [_ | T2], C) -> match_count(T1, T2, C).
 
-
 % best_match(L1, L2) -> {MatchCount, Alignment}
 %   Find the smallest value of Alignment, with
 %   -length(L1) =< Alignment =< length(L2) that maximizes
@@ -218,12 +217,22 @@ match_count([_ | T1], [_ | T2], C) -> match_count(T1, T2, C).
 %     best_match([1,2,3],[1,0,2,3,2,1,2,0]) -> {2,1}
 %     best_match("banana", "ananas is the genus of pineapple") -> {5, -1}
 %     best_match("banana", "bandanna") -> {3, 0}
-best_match(L1, L2) when is_list(L1), is_list(L2) -> % stub
-  use(L1), use(L2),
-  Alignment = 0,  % -length(L1) =< Alignment =< length(L2)
-  MatchCount = 0,
-  {MatchCount, Alignment}.
 
+best_match(L1, L2) when is_list(L1), is_list(L2) ->
+  Res = [best_match(L1, L2, N) || N <- lists:seq(-length(L1)+1, length(L2)-1)],
+  {MatchCount, Alignment} = lists:foldl(fun({M1, A1}, {MAcc, _}) when
+    M1 > MAcc ->
+      {M1, A1};
+    (_, Acc) ->
+      Acc
+    end, {-1,0}, Res),
+  {MatchCount, Alignment}.
+best_match(L1, L2, Alignment) -> % stub
+  MatchCount = if
+    Alignment <  0 -> match_count(lists:nthtail(-Alignment, L1), L2);
+    Alignment >= 0 -> match_count(L1, lists:nthtail(Alignment,L2))
+  end,
+  {MatchCount, Alignment}.
 
 % best_match_par(W, Key1, Key2) -> {MatchCount, Alignment}
 %   The parallel version of best_match.
