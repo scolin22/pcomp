@@ -1,8 +1,8 @@
 -module(hw2).
 
 -export([pi/0, degree_to_radian/1, radian_to_degree/1, move_pos/2, move_par/4, combine/2]).
--export([test_move_par/0, test_move_pos/0]).
--export([rle/1, longest_run/3]).
+-export([test_move_par/0, test_move_pos/0, test_rle/0, rlep/1]).
+-export([rle/1, longest_run/3, traverse/2, traverse_pos/2, combine_max/2, leaf/2, max_tup/3]).
 -export([match_count/2, best_match/2, best_match_par/3]).
 
 -import(fp, [fuzzy_match/3, floor/1, ceiling/1]).
@@ -21,7 +21,7 @@ radian_to_degree(Rad) -> Rad*180/pi().
 %                          position.  Dir is the direction that the
 %                          traveler is facing (in degrees counter-clockwise
 %                          from the x-axis).
-%  Move = {Dist, Dir}:  The traveler turns Dir degrees counter-clockwise,
+%  Move = {Dir, Dist}:  The traveler turns Dir degrees counter-clockwise,
 %                          and then move Dist units "forward".
 % We return the final position.
 % If Move is a list, then we perform the given moves, in head-to-tail order.
@@ -87,21 +87,107 @@ move_par(W, InitPos, MoveKey, PosKey) ->
 %     such that Count consecutive occurrences of Value are replaced by
 %     the tuple {Value, Count}.  For example,
 %     rle([1,2,2,3,3,3,0,5,5]) -> [{1,1},{2,2},{3,3},{0,1},{5,2}]
+test_rle() ->
+  L = [1,2,2,3,3,3,0,5,5],
+  rlep(L).
+
+
 rle(L) when is_list(L) -> % stub
-  use(L),
-  Value = any_term,
-  RunLen = 0,
-  [{Value, RunLen}].
+  lists:foldl(fun hw2:traverse/2, [], lists:reverse(L)).
+
+traverse(A, []) -> [{A,1}];
+traverse(A, [{A,N}|T]) -> [{A,N+1}|T];
+traverse(A, C) -> [{A,1}|C].
 
 % return the a description of the longest run of V's in the distributed
 % list associated with Key in worker-pool W.
 longest_run(W, Key, V) -> % stub
-  use([W, Key, V]),
-  Length = 0,
-  Position = 0,
-  {Length, Position}.
+  wtree:reduce(W,
+    fun(ProcState) -> leaf(wtree:get(ProcState, Key), V) end,
+    fun(Left, Right) -> combine_max(Left, Right) end).
 
+combine_max(Left, Right) ->
+  {LLeft,LMax,LRight} = Left,
+  {RLeft,RMax,RRight} = Right,
 
+  {V,P,LRightA} = LRight,
+  {_,_,RLeftA} = RLeft,
+  MMax = {V,P,LRightA+RLeftA},
+
+  {_,PRMax,NRMax} = RMax,
+  OffRMax = {V,P+LRightA+PRMax-1,NRMax},
+  New_Max = max_tup([LMax, MMax, OffRMax], V, {V,1,0}),
+  {_,_,NLLeft} = LLeft,
+  if
+    (NLLeft /= 0) and (LLeft == LMax) and (New_Max == MMax) ->
+      New_Left = New_Max;
+    true ->
+      New_Left = LLeft
+  end,
+  {_,_,NRRight} = RRight,
+  if
+    (NRRight /= 0) and (RRight == RMax) and (New_Max == MMax) ->
+      New_Right = New_Max;
+    true ->
+      {_,PRRight,NRRight} = RRight,
+      New_Right = {V,P+LRightA+PRRight,NRRight}
+  end,
+  {New_Left,New_Max,New_Right}.
+
+leaf(L, V) when is_list(L) ->
+  APN = rlep(L),
+  [LTup|_] = APN,
+  RTup = lists:last(APN),
+  {LA,_,_} = LTup,
+  if
+    LA == V ->
+      Left = LTup;
+    true ->
+      Left = {V,1,0}
+  end,
+  {RA,_,_} = RTup,
+  if
+    RA == V ->
+      Right = RTup;
+    true ->
+      Right = {V,length(L),0}
+  end,
+  Max = max_tup(APN, V, {V,1,0}),
+  {Left, Max, Right};
+leaf(L, V) ->
+  leaf([L], V).
+
+max_tup([H], V, Acc) ->
+  {A,_,N} = H,
+  {_,_,Max} = Acc,
+  if
+    (A == V) and (N >= Max) ->
+      H;
+    true ->
+      Acc
+  end;
+max_tup([H|T], V, Acc) ->
+  {A,_,N} = H,
+  {_,_,Max} = Acc,
+  if
+    A == V ->
+      if
+        N > Max ->
+          max_tup(T, V, H);
+        true ->
+          max_tup(T, V, Acc)
+      end;
+    true ->
+      max_tup(T, V, Acc)
+  end.
+
+rlep(L) when is_list(L) -> % stub
+  NList = lists:zip(L, lists:seq(1, length(L))),
+  lists:reverse(lists:foldl(fun hw2:traverse_pos/2, [], NList)).
+
+traverse_pos({A,P}, []) -> [{A,P,1}];
+traverse_pos({A,_}, [{A,P,N}|T]) -> [{A,P,N+1}|T];
+traverse_pos({A,P}, C) -> [{A,P,1}|C].
 % match_count:
 %   We return the number of values for I,
 %   with 1 <= I <= min(length(L1), length(L2)), such that
