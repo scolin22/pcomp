@@ -102,37 +102,49 @@ traverse(A, C) -> [{A,1}|C].
 % return the a description of the longest run of V's in the distributed
 % list associated with Key in worker-pool W.
 longest_run(W, Key, V) -> % stub
-  wtree:reduce(W,
+  {_,Result,_,_} = wtree:reduce(W,
     fun(ProcState) -> leaf(wtree:get(ProcState, Key), V) end,
-    fun(Left, Right) -> combine_max(Left, Right) end).
+    fun(Left, Right) -> combine_max(Left, Right) end),
+  {_,Pos,Count} = Result,
+  {Count,Pos}.
 
 combine_max(Left, Right) ->
-  {LLeft,LMax,LRight} = Left,
-  {RLeft,RMax,RRight} = Right,
+  {LLeft,LMax,LRight,LOffset} = Left,
+  {RLeft,RMax,RRight,ROffset} = Right,
 
   {V,P,LRightA} = LRight,
   {_,_,RLeftA} = RLeft,
   MMax = {V,P,LRightA+RLeftA},
 
   {_,PRMax,NRMax} = RMax,
-  OffRMax = {V,P+LRightA+PRMax-1,NRMax},
-  New_Max = max_tup([LMax, MMax, OffRMax], V, {V,1,0}),
   {_,_,NLLeft} = LLeft,
+  {_,_,NRRight} = RRight,
+  if
+    NLLeft /= 0 ->
+      OffRMax = {V,P+LRightA+PRMax-1,NRMax};
+    true ->
+      OffRMax = {V,LOffset+PRMax,NRMax}
+  end,
+  New_Max = max_tup([LMax, MMax, OffRMax], V, {V,1,0}),
   if
     (NLLeft /= 0) and (LLeft == LMax) and (New_Max == MMax) ->
       New_Left = New_Max;
     true ->
       New_Left = LLeft
   end,
-  {_,_,NRRight} = RRight,
   if
     (NRRight /= 0) and (RRight == RMax) and (New_Max == MMax) ->
       New_Right = New_Max;
     true ->
       {_,PRRight,NRRight} = RRight,
-      New_Right = {V,P+LRightA+PRRight,NRRight}
+      if
+        NLLeft /= 0 ->
+          New_Right = {V,P+LRightA+PRRight-1,NRRight};
+        true ->
+          New_Right = {V,LOffset+PRRight,NRRight}
+      end
   end,
-  {New_Left,New_Max,New_Right}.
+  {New_Left,New_Max,New_Right,LOffset+ROffset}.
 
 leaf(L, V) when is_list(L) ->
   APN = rlep(L),
@@ -153,7 +165,7 @@ leaf(L, V) when is_list(L) ->
       Right = {V,length(L),0}
   end,
   Max = max_tup(APN, V, {V,1,0}),
-  {Left, Max, Right};
+  {Left, Max, Right, length(L)};
 leaf(L, V) ->
   leaf([L], V).
 
