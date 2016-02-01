@@ -119,12 +119,7 @@ combine_max(Left, Right) ->
   {_,PRMax,NRMax} = RMax,
   {_,_,NLLeft} = LLeft,
   {_,_,NRRight} = RRight,
-  if
-    NLLeft /= 0 ->
-      OffRMax = {V,P+LRightA+PRMax-1,NRMax};
-    true ->
-      OffRMax = {V,LOffset+PRMax,NRMax}
-  end,
+  OffRMax = {V,LOffset+PRMax,NRMax},
   New_Max = max_tup([LMax, MMax, OffRMax], V, {V,1,0}),
   if
     (NLLeft /= 0) and (LLeft == LMax) and (New_Max == MMax) ->
@@ -137,12 +132,7 @@ combine_max(Left, Right) ->
       New_Right = New_Max;
     true ->
       {_,PRRight,NRRight} = RRight,
-      if
-        NLLeft /= 0 ->
-          New_Right = {V,P+LRightA+PRRight-1,NRRight};
-        true ->
-          New_Right = {V,LOffset+PRRight,NRRight}
-      end
+      New_Right = {V,LOffset+PRRight,NRRight}
   end,
   {New_Left,New_Max,New_Right,LOffset+ROffset}.
 
