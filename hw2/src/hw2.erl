@@ -3,7 +3,7 @@
 -export([pi/0, degree_to_radian/1, radian_to_degree/1, move_pos/2, move_par/4, combine/2]).
 -export([test_move_par/0, test_move_pos/0, test_rle/0, rlep/1]).
 -export([rle/1, longest_run/3, traverse/2, traverse_pos/2, combine_max/2, leaf/2, max_tup/3]).
--export([match_count/2, best_match/2, best_match/3, best_match_par/3]).
+-export([match_count/2, best_match/2, best_match/3, best_match_par/3, best_match_time/0]).
 
 -import(fp, [fuzzy_match/3, floor/1, ceiling/1]).
 
@@ -233,6 +233,40 @@ best_match(L1, L2, Alignment) -> % stub
     Alignment >= 0 -> match_count(L1, lists:nthtail(Alignment,L2))
   end,
   {MatchCount, Alignment}.
+
+best_match_time(P, N) ->
+  L1 = [1,2,3,4],
+  W = wtree:create(P),
+  wtree:rlist(W, N, 1000000, best_match_data),
+  wtree:barrier(W),  % make sure the rlist computations have finished
+  MyList = lists:append(workers:retrieve(W, best_match_data)),
+  % ParTime = time_it:t(fun() -> sum(W, best_match_data) end),
+  ParTime = time_it:t(fun() -> best_match(L1, MyList) end),
+  % ParSum = sum(W, best_match_data),
+  ParSum = best_match(L1, MyList),
+  SeqTime = time_it:t(fun() -> best_match(L1, MyList) end),
+  SeqSum = best_match(L1, MyList),
+  Status = case ParSum of
+    SeqSum ->
+      io:format("best_match_time: passed.  The match is ~w~n", [ParSum]),
+      io:format("  timing stats for parallel version: ~w~n", [ParTime]),
+      io:format("  timing stats for sequential version: ~w~n", [SeqTime]),
+      SpeedUp = element(2, lists:keyfind(mean, 1, SeqTime)) /
+                element(2, lists:keyfind(mean, 1, ParTime)),
+      io:format("  speed-up: ~6.3f~n", [SpeedUp]);
+    _ ->
+      io:format("best_match_time: FAILED.  Got sum of ~w.  Expected ~w~n", [ParSum, SeqSum]),
+      fail
+  end,
+  % wtree:reap(W),  % clean-up: terminate the workers
+  Status.
+
+best_match_time() ->
+  best_match_time( 4,     250),
+  best_match_time( 4,     500),
+  best_match_time( 4,    1000),
+  best_match_time( 4,    2000),
+  best_match_time( 4,    4000).
 
 % best_match_par(W, Key1, Key2) -> {MatchCount, Alignment}
 %   The parallel version of best_match.

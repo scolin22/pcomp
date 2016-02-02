@@ -1,0 +1,11 @@
+The implementation of best_match within hw2 performs match_count for values of Alignment from -length(L1)+1 to length(L2)-1). Each call to match_count(L1, L2) runs in linear time for the shorter of L1 or L2. So this step takes O(min(N1, N2)). The outer loops takes approximately O(N1 + N2). Therefore best_match runs in O((N1+N2)*min(N1, N2)) or approximately O(N^2).
+
+Running time_it:t() for 20 runs for each data point:
+
+N =  250, [{mean,0.0010700599871657761},{std,1.541180095149648e-4}]
+N =  500, [{mean,0.0041261039506172836},{std,3.7804579725468954e-4}]
+N = 1000, [{mean,0.016432785032786886}, {std,0.0011291281394144965}]
+N = 2000, [{mean,0.06856690420000001},  {std,0.0017369592508240587}]
+N = 4000, [{mean,0.2731276255},         {std,0.0023049540913410126}]
+
+We observe that the mean increases 4x as N increases 2x. This appears to support the original hypothesis of O(N^2).
