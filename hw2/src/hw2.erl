@@ -106,7 +106,12 @@ longest_run(W, Key, V) -> % stub
     fun(ProcState) -> leaf(wtree:get(ProcState, Key), V) end,
     fun(Left, Right) -> combine_max(Left, Right) end),
   {_,Pos,Count} = Result,
-  {Count,Pos}.
+  if
+    Count == 0 ->
+      {0,0};
+    true ->
+      {Count,Pos}
+  end.
 
 combine_max(Left, Right) ->
   {LLeft,LMax,LRight,LOffset} = Left,
@@ -237,13 +242,12 @@ best_match(L1, L2, Alignment) -> % stub
 best_match_time(P, N) ->
   L1 = [1,2,3,4],
   W = wtree:create(P),
-  wtree:rlist(W, N, 1000000, best_match_data),
+  workers:update(W, key1, fun(_) -> L1 end),
+  wtree:rlist(W, N, 1000000, key2),
   wtree:barrier(W),  % make sure the rlist computations have finished
-  MyList = lists:append(workers:retrieve(W, best_match_data)),
-  % ParTime = time_it:t(fun() -> sum(W, best_match_data) end),
-  ParTime = time_it:t(fun() -> best_match(L1, MyList) end),
-  % ParSum = sum(W, best_match_data),
-  ParSum = best_match(L1, MyList),
+  MyList = lists:append(workers:retrieve(W, key2)),
+  ParTime = time_it:t(fun() -> best_match_par(W, key1, key2) end),
+  ParSum = best_match_par(W, key1, key2),
   SeqTime = time_it:t(fun() -> best_match(L1, MyList) end),
   SeqSum = best_match(L1, MyList),
   Status = case ParSum of
@@ -258,10 +262,15 @@ best_match_time(P, N) ->
       io:format("best_match_time: FAILED.  Got sum of ~w.  Expected ~w~n", [ParSum, SeqSum]),
       fail
   end,
-  % wtree:reap(W),  % clean-up: terminate the workers
+  wtree:reap(W),  % clean-up: terminate the workers
   Status.
 
 best_match_time() ->
+  best_match_time( 4,       7),
+  best_match_time( 4,      15),
+  best_match_time( 4,      31),
+  best_match_time( 4,      62),
+  best_match_time( 4,     125),
   best_match_time( 4,     250),
   best_match_time( 4,     500),
   best_match_time( 4,    1000),
@@ -274,9 +283,10 @@ best_match_time() ->
 %   best_match(workers:retrieve(W, Key1), workers:retrieve(W, Key2))
 %   but best_match should do it's work in parallel.
 best_match_par(W, Key1, Key2) ->
-  wtree:reduce(W,
+  {_,Res,_} = wtree:reduce(W,
     fun(ProcState) -> leaf_match(wtree:get(ProcState, Key1), wtree:get(ProcState, Key2)) end,
-    fun(Left, Right) -> combine_match(Left, Right) end).
+    fun(Left, Right) -> combine_match(Left, Right) end),
+  Res.
 
 leaf_match(L1, L2) when is_list(L1), is_list(L2) ->
   Res = all_matches(L1, L2),

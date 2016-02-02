@@ -1,6 +1,11 @@
-The implementation of best_match within hw2 performs match_count for values of Alignment from -length(L1)+1 to length(L2)-1). Each call to match_count(L1, L2) runs in linear time for the shorter of L1 or L2. So this step takes O(min(N1, N2)). The outer loops takes approximately O(N1 + N2). Therefore best_match runs in O((N1+N2)*min(N1, N2)) or approximately O(N^2).
+4B =============================================================================
+The implementation of best_match within hw2 performs match_count for values of
+Alignment from -length(L1)+1 to length(L2)-1). Each call to match_count(L1, L2)
+runs in linear time for the shorter of L1 or L2. So this step takes
+O(min(N1, N2)). The outer loops takes approximately O(N1 + N2). Therefore
+best_match runs in O((N1+N2)*min(N1, N2)) or approximately O(N^2).
 
-Running time_it:t() for 20 runs for each data point:
+Running time_it:t() for 20 runs for each data point: N2 = N, N1 = 4
 
 N =  250, [{mean,0.0010700599871657761},{std,1.541180095149648e-4}]
 N =  500, [{mean,0.0041261039506172836},{std,3.7804579725468954e-4}]
@@ -9,3 +14,50 @@ N = 2000, [{mean,0.06856690420000001},  {std,0.0017369592508240587}]
 N = 4000, [{mean,0.2731276255},         {std,0.0023049540913410126}]
 
 We observe that the mean increases 4x as N increases 2x. This appears to support the original hypothesis of O(N^2).
+
+4C =============================================================================
+Comparing parallel and sequential version of best_match_par vs best_match.
+The performance improvement between parallel and sequential versions occurs
+around N2 = 62 where N1 = 4.
+
+N2 = N, N1 = 4
+N =    7, P = 4
+  timing stats for parallel version: [{mean,4.7419609037887445e-5},{std,7.786498178746493e-6}]
+  timing stats for sequential version: [{mean,6.917792853931327e-6},{std,8.183213094995716e-6}]
+  speed-up:  0.146
+N =   15, P = 4
+  timing stats for parallel version: [{mean,5.143497695828883e-5},{std,2.4118470505096847e-5}]
+  timing stats for sequential version: [{mean,1.1889599372235935e-5},{std,1.799539752193695e-5}]
+  speed-up:  0.231
+N =   31, P = 4
+  timing stats for parallel version: [{mean,5.75462886408104e-5},{std,2.3802298072707582e-5}]
+  timing stats for sequential version: [{mean,2.7612481748398713e-5},{std,4.797612309234676e-6}]
+  speed-up:  0.480
+N =   62, P = 4
+  timing stats for parallel version: [{mean,7.855664736842087e-5},{std,2.6139086395480354e-5}]
+  timing stats for sequential version: [{mean,8.425639127137866e-5},{std,3.296507110757687e-5}]
+  speed-up:  1.073
+N =  125, P = 4
+  timing stats for parallel version: [{mean,1.419146311905776e-4},{std,4.0385567375246795e-5}]
+  timing stats for sequential version: [{mean,2.9160445626822117e-4},{std,4.0995132840379e-5}]
+  speed-up:  2.055
+N =  250, P = 4
+  timing stats for parallel version: [{mean,2.8297290265987527e-4},{std,6.983032909494968e-5}]
+  timing stats for sequential version: [{mean,0.0011194881577181205},{std,1.1569902505188275e-4}]
+  speed-up:  3.956
+N =  500, P = 4
+  timing stats for parallel version: [{mean,7.851462158555712e-4},{std,1.2943730963425282e-4}]
+  timing stats for sequential version: [{mean,0.004103526696721315},{std,3.5733993388632204e-4}]
+  speed-up:  5.226
+N = 1000, P = 4
+  timing stats for parallel version: [{mean,0.0023900803126491667},{std,3.351653308106739e-4}]
+  timing stats for sequential version: [{mean,0.016578619672131145},{std,0.0012034075572155897}]
+  speed-up:  6.936
+N = 2000, P = 4
+  timing stats for parallel version: [{mean,0.008919380814159291},{std,8.146054230370791e-4}]
+  timing stats for sequential version: [{mean,0.0649925474375},{std,0.002360795697884042}]
+  speed-up:  7.287
+N = 4000, P = 4
+  timing stats for parallel version: [{mean,0.034794136517241385},{std,0.0019956760275705913}]
+  timing stats for sequential version: [{mean,0.26044525350000003},{std,0.0012238214504613233}]
+  speed-up:  7.485
