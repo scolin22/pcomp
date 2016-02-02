@@ -240,7 +240,7 @@ best_match(L1, L2, Alignment) -> % stub
   {MatchCount, Alignment}.
 
 best_match_time(P, N) ->
-  L1 = [1,2,3,4],
+  L1 = [1,2],
   W = wtree:create(P),
   workers:update(W, key1, fun(_) -> L1 end),
   wtree:rlist(W, N, 1000000, key2),
@@ -252,7 +252,9 @@ best_match_time(P, N) ->
   SeqSum = best_match(L1, MyList),
   Status = case ParSum of
     SeqSum ->
-      io:format("best_match_time: passed.  The match is ~w~n", [ParSum]),
+      io:format("best_match_time: passed.  The match is ~w~n", [SeqSum]),
+      io:format("L1 ~w~n", [L1]),
+      io:format("L2 ~w~n", [MyList]),
       io:format("  timing stats for parallel version: ~w~n", [ParTime]),
       io:format("  timing stats for sequential version: ~w~n", [SeqTime]),
       SpeedUp = element(2, lists:keyfind(mean, 1, SeqTime)) /
