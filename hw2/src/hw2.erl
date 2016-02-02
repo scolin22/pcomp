@@ -311,18 +311,31 @@ combine_match(Left, Right) ->
 
   if
     RRight == [] ->
-      New_Right = RRight;
+      New_Right = RRight,
+      New_Left = LLeft;
     true ->
-      {_,Offset} = lists:last(LRight),
-      Off_Right = lists:map(fun({M,A}) -> {M,A+Offset+1} end, RRight),
-      SZipped = lists:nthtail(Offset+1, MMax),
-      SRight = lists:nthtail(length(RRight)-(Offset+1), Off_Right),
-      New_Right = SZipped ++ SRight
+      {_,LOffset} = lists:last(LRight),
+      {_,ROffset} = lists:last(RRight),
+      Off_Right = lists:map(fun({M,A}) -> {M,A+LOffset+1} end, RRight),
+      if
+        (length(RRight) - (ROffset+1)) >= 0 ->
+          RZip = lists:nthtail(ROffset+1, MMax),
+          RUnzip = lists:nthtail(length(RRight)-(ROffset+1), Off_Right),
+          New_Right = RZip ++ RUnzip;
+        true ->
+          New_Right = Off_Right
+      end,
+      if
+        (length(LLeft)-(LOffset+1)) >= 0 ->
+          LUnzip = lists:sublist(LLeft, LOffset+1),
+          LZip = lists:sublist(MMax, length(LLeft)-(LOffset+1)),
+          New_Left = LUnzip ++ LZip;
+        true ->
+          New_Left = LLeft
+      end
   end,
 
-% Replace matching items in RRight with MMax
-
-  {LLeft,New_Max,New_Right}.
+  {New_Left,New_Max,New_Right}.
 
 all_matches(L1, L2) when is_list(L1), is_list(L2) ->
   [best_match(L1, L2, N) || N <- lists:seq(-length(L1)+1, length(L2)-1)];
