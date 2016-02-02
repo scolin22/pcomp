@@ -3,7 +3,7 @@
 -export([pi/0, degree_to_radian/1, radian_to_degree/1, move_pos/2, move_par/4, combine/2]).
 -export([test_move_par/0, test_move_pos/0, test_rle/0, rlep/1]).
 -export([rle/1, longest_run/3, traverse/2, traverse_pos/2, combine_max/2, leaf/2, max_tup/3]).
--export([match_count/2, best_match/2, best_match/3, best_match_par/3, best_match_time/0]).
+-export([match_count/2, best_match/2, best_match/3, best_match_par/3, best_match_time/0, all_matches/2, combine_match/2, leaf_match/2]).
 
 -import(fp, [fuzzy_match/3, floor/1, ceiling/1]).
 
@@ -220,9 +220,9 @@ match_count([_ | T1], [_ | T2], C) -> match_count(T1, T2, C).
 
 best_match(L1, L2) when is_list(L1), is_list(L2) ->
   Res = [best_match(L1, L2, N) || N <- lists:seq(-length(L1)+1, length(L2)-1)],
-  {MatchCount, Alignment} = lists:foldl(fun({M1, A1}, {MAcc, _}) when
-    M1 > MAcc ->
-      {M1, A1};
+  {MatchCount, Alignment} = lists:foldl(fun({M, A}, {MAcc, _}) when
+    M > MAcc ->
+      {M, A};
     (_, Acc) ->
       Acc
     end, {-1,0}, Res),
@@ -273,14 +273,50 @@ best_match_time() ->
 %   best_match_par(W, Key1, Key2) should return the same value as
 %   best_match(workers:retrieve(W, Key1), workers:retrieve(W, Key2))
 %   but best_match should do it's work in parallel.
-best_match_par(W, Key1, Key2) -> % stub
-  use(W), use(Key1), use(Key2),
-  Alignment = 0,  % -length(L1) =< Alignment =< length(L2)
-  MatchCount = 0,
-  {MatchCount, Alignment}.
+best_match_par(W, Key1, Key2) ->
+  wtree:reduce(W,
+    fun(ProcState) -> leaf_match(wtree:get(ProcState, Key2), wtree:get(ProcState, Key1)) end,
+    fun(Left, Right) -> combine_match(Left, Right) end).
 
+leaf_match(L1, L2) ->
+  Res = all_matches(L1, L2),
+  Max = lists:foldl(fun({M, A}, {MAcc, _}) when
+    M > MAcc ->
+      {M, A};
+    (_, Acc) ->
+      Acc
+    end, {-1,0}, Res),
+  Left = lists:sublist(Res,1,length(L1)-1),
+  Right = lists:nthtail(length(Res)-length(L1)+1, Res),
+  {Left, Max, Right}.
+
+combine_match(Left, Right) ->
+  {LLeft, LMax, LRight} = Left,
+  {RLeft, RMax, RRight} = Right,
+
+  if
+    RRight == [] ->
+      New_Right = RRight;
+    true ->
+      {_,_,Offset} = lists:last(RRight),
+      New_Right = lists:map(fun({M,A}) -> {M,A+Offset+1} end, RRight)
+  end,
+
+  MMax = lists:zipwith(fun({LM,LA},{RM, _}) -> {LM+RM,LA} end,LRight,RLeft),
+
+  New_Max = lists:foldl(fun({M, A}, {MAcc, _}) when
+    M > MAcc ->
+      {M, A};
+    (_, Acc) ->
+      Acc
+    end, LMax, [LMax,RMax] ++ MMax),
+
+  {LLeft,New_Max,New_Right}.
+
+all_matches(L1, L2) when is_list(L1), is_list(L2) ->
+  [best_match(L1, L2, N) || N <- lists:seq(-length(L1)+1, length(L2)-1)].
 
 % use(X) suppresses compiler warnings that X is unused.
 %   I put it in here so the stubs will compile without warning.
 %   You should remove it in the final version of your code.
-use(_) -> ok.
+% use(_) -> ok.
