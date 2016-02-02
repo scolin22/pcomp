@@ -275,10 +275,10 @@ best_match_time() ->
 %   but best_match should do it's work in parallel.
 best_match_par(W, Key1, Key2) ->
   wtree:reduce(W,
-    fun(ProcState) -> leaf_match(wtree:get(ProcState, Key2), wtree:get(ProcState, Key1)) end,
+    fun(ProcState) -> leaf_match(wtree:get(ProcState, Key1), wtree:get(ProcState, Key2)) end,
     fun(Left, Right) -> combine_match(Left, Right) end).
 
-leaf_match(L1, L2) ->
+leaf_match(L1, L2) when is_list(L1), is_list(L2) ->
   Res = all_matches(L1, L2),
   Max = lists:foldl(fun({M, A}, {MAcc, _}) when
     M > MAcc ->
@@ -288,19 +288,17 @@ leaf_match(L1, L2) ->
     end, {-1,0}, Res),
   Left = lists:sublist(Res,1,length(L1)-1),
   Right = lists:nthtail(length(Res)-length(L1)+1, Res),
-  {Left, Max, Right}.
+  {Left, Max, Right};
+leaf_match(L1, L2) when is_list(L1) ->
+  leaf_match(L1, [L2]);
+leaf_match(L1, L2) when is_list(L2) ->
+  leaf_match([L1], L2);
+leaf_match(L1, L2) ->
+  leaf_match([L1], [L2]).
 
 combine_match(Left, Right) ->
   {LLeft, LMax, LRight} = Left,
   {RLeft, RMax, RRight} = Right,
-
-  if
-    RRight == [] ->
-      New_Right = RRight;
-    true ->
-      {_,_,Offset} = lists:last(RRight),
-      New_Right = lists:map(fun({M,A}) -> {M,A+Offset+1} end, RRight)
-  end,
 
   MMax = lists:zipwith(fun({LM,LA},{RM, _}) -> {LM+RM,LA} end,LRight,RLeft),
 
@@ -311,10 +309,29 @@ combine_match(Left, Right) ->
       Acc
     end, LMax, [LMax,RMax] ++ MMax),
 
+  if
+    RRight == [] ->
+      New_Right = RRight;
+    true ->
+      {_,Offset} = lists:last(LRight),
+      Off_Right = lists:map(fun({M,A}) -> {M,A+Offset+1} end, RRight),
+      SZipped = lists:nthtail(Offset+1, MMax),
+      SRight = lists:nthtail(length(RRight)-(Offset+1), Off_Right),
+      New_Right = SZipped ++ SRight
+  end,
+
+% Replace matching items in RRight with MMax
+
   {LLeft,New_Max,New_Right}.
 
 all_matches(L1, L2) when is_list(L1), is_list(L2) ->
-  [best_match(L1, L2, N) || N <- lists:seq(-length(L1)+1, length(L2)-1)].
+  [best_match(L1, L2, N) || N <- lists:seq(-length(L1)+1, length(L2)-1)];
+all_matches(L1, L2) when is_list(L1) ->
+  all_matches(L1, [L2]);
+all_matches(L1, L2) when is_list(L2) ->
+  all_matches([L1], L2);
+all_matches(L1, L2) ->
+  all_matches([L1], [L2]).
 
 % use(X) suppresses compiler warnings that X is unused.
 %   I put it in here so the stubs will compile without warning.
