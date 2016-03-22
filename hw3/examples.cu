@@ -5,7 +5,10 @@
 #define VECSUM 2
 #define REDUCE_SUM 3
 #define DOTPROD 4
+#define LOGMAP 5
 #define DEFAULT_TEST REDUCE_SUM
+
+#define ALPHA 1.0f
 
 /************************
 *  saxpy
@@ -90,6 +93,26 @@ float dotprod_ref(uint n, float *x, float *y) {
   return(sum);
 }
 
+/************************
+*  logistic map
+************************/
+
+__global__ void logmap(float *x, int n, int m) {
+  uint i = blockDim.x * blockIdx.x + threadIdx.x;
+
+  if (i < n)
+    for(int j = 0; j < m; j++)
+      x[i] = ALPHA * x[i] * (1.0f - x[i]);
+}
+
+void logmap_ref(float *x, int n, int m, float *z) {
+  memcpy(z, x, n*sizeof(float));
+
+  for(int j = 0; j < m; j++)
+    for(int i = 0; i < n; i++)
+      z[i] = ALPHA * z[i] * (1.0f - z[i]);
+}
+
 /********************************************************************
  *  dotprod2: just like it sounds
  *    First phase of a dotprod.  Each block computes its part of the
@@ -122,6 +145,8 @@ int main(int argc, char **argv) {
   uint n = (argc >= 2) ? atoi(argv[1]) : 1000000;
   uint nn = n;
   uint what = (argc >= 3) ? atoi(argv[2]) : DEFAULT_TEST;
+  // m for LOGMAP
+  uint m = (argc >= 4 && what == LOGMAP) ? atoi(argv[3]) : 0;
   float *x, *y, *z, *z_ref;
   float *dev_x, *dev_y, *dev_z;
   float a;
@@ -204,6 +229,13 @@ int main(int argc, char **argv) {
       cudaMemcpy(z, dev_z, sizeof(float), cudaMemcpyDeviceToHost);
       z_ref[0] = dotprod_ref(n, x, y);
       nn = 1;
+      break;
+    case LOGMAP:
+      logmap<<<ceil(n/256.0),256>>>(dev_x, n, m);
+      printf("a: size = %d, z=%016llx dev_x=%016llx\n", size, z, dev_x);
+      cudaMemcpy(z, dev_x, size, cudaMemcpyDeviceToHost);
+      printf("b\n");
+      logmap_ref(x, n, m, z_ref);
       break;
     default:
       fprintf(stderr, "ERROR: unknown test case -- %d\n", what);
