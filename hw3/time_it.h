@@ -39,7 +39,7 @@ struct time_it_stats {
   double std;   // standard deviation of execution time, in seconds
 };
 
-// time_it_create: create a structre for time_it_run.  
+// time_it_create: create a structre for time_it_run.
 //   ntrials is the number of times to execute the given function.
 //   Note that the pointer returned by time_it_create can be used for multiple
 //   calls of time_it_run.  Each such trial will execute the user-provided

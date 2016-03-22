@@ -1,5 +1,5 @@
 NVCC      = nvcc
-CFLAGS    = -O3 
+CFLAGS    = -O3
 LDFLAGS   =
 
 OBJ     = time_it.o
@@ -13,6 +13,9 @@ examples: examples.o
 
 timing: timing.o $(OBJ)
 	$(NVCC) $(CFLAGS) timing.o $(OBJ) $(LDFLAGS) -o timing
+
+clean:
+	$(RM) *.o perc examples timing
 
 
 .SUFFIXES: .c .cu .o

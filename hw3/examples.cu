@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
   uint n = (argc >= 2) ? atoi(argv[1]) : 1000000;
   uint nn = n;
   uint what = (argc >= 3) ? atoi(argv[2]) : DEFAULT_TEST;
-  float *x, *y, *z, *z_ref; 
+  float *x, *y, *z, *z_ref;
   float *dev_x, *dev_y, *dev_z;
   float a;
   cudaDeviceProp prop;
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
   z  = (float *)malloc(size);
   z_ref = (float *)malloc(size);
 
-  // Use a logistic map to make some pseudo-random numbers 
+  // Use a logistic map to make some pseudo-random numbers
   // It's fast, but the distribution isn't very uniform, and
   //   the other statistical properties are lousy.  But it's
   //   fast, and that's all we need for some simple tests.
