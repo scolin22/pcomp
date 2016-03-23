@@ -6,6 +6,7 @@
 #define REDUCE_SUM 3
 #define DOTPROD 4
 #define LOGMAP 5
+#define NORM 6
 #define DEFAULT_TEST REDUCE_SUM
 
 #define ALPHA 1.0f
@@ -111,6 +112,35 @@ void logmap_ref(float *x, int n, int m, float *z) {
   for(int j = 0; j < m; j++)
     for(int i = 0; i < n; i++)
       z[i] = ALPHA * z[i] * (1.0f - z[i]);
+}
+
+/************************
+*  norm calculation
+************************/
+
+__global__ void norm(float *x, int n, float *z) {
+  uint i = blockDim.x * blockIdx.x + threadIdx.x;
+  uint blockBase = blockDim.x * blockIdx.x;
+  uint m = min(blockDim.x, n - blockBase);
+
+  if (i < n)
+    x[i] = pow(x[i], 2);
+
+  __syncthreads();
+
+  reduce_sum_dev(m, &(x[blockBase]));
+
+  if (i < n && threadIdx.x == 0)
+    z[blockIdx.x] = sqrt(x[i]);
+}
+
+float norm_ref(float *x, int n) {
+  float sum = 0.0;
+
+  for(int i = 0; i < n; i++)
+    sum += pow(x[i],2);
+
+  return sqrt(sum);
 }
 
 /********************************************************************
@@ -237,6 +267,14 @@ int main(int argc, char **argv) {
       printf("b\n");
       logmap_ref(x, n, m, z_ref);
       break;
+    case NORM:
+      norm<<<ceil(n/1024.0),1024>>>(dev_x, n, dev_z);
+      if (ceil(n/1024.0) > 1)
+        norm<<<1,ceil(n/1024.0)>>>(dev_z, ceil(n/1024.0), dev_z);
+      cudaMemcpy(z, dev_z, size, cudaMemcpyDeviceToHost);
+      z_ref[0] = norm_ref(x, n);
+      nn = 1;
+      break;
     default:
       fprintf(stderr, "ERROR: unknown test case -- %d\n", what);
       exit(-1);
@@ -244,7 +282,7 @@ int main(int argc, char **argv) {
 
   for(int i = 0; i < nn; i++) { // check the result
     if(!near(n, z[i], z_ref[i])) {
-      fprintf(stderr, "ERROR: i=%d: z[i] = %15.10f, z_ref[i] = %15.10f\n", z[i], z_ref[i]);
+      fprintf(stderr, "ERROR: i=%d: z[i] = %15.10f, z_ref[i] = %15.10f\n", i, z[i], z_ref[i]);
       exit(-1);
     }
   }
