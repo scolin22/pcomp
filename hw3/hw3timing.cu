@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <curand_kernel.h>
 #include "time_it.h"
 
 // HANDLE_ERROR is from "CUDA by Exmaple" by Sanders and Kandrot
@@ -24,6 +25,7 @@ struct kernel_arg {
   uint n;
   float *v, *z;
   int m, nblks, tpb, warpSize, whichKernel;
+  curandState *dev_randState;
 };
 
 /************************
@@ -88,6 +90,33 @@ void do_norm(void *void_arg) {
   cudaDeviceSynchronize();
 }
 
+/************************
+*  Change by Colin Stone, Rest taken from examples.cu by Mark
+*  random number generator
+************************/
+
+__global__ void setup_kernel(uint n, curandState *state) {
+  uint myId = blockDim.x * blockIdx.x + threadIdx.x;
+  if(myId < n)
+    curand_init(1234, myId, 0, &state[myId]);
+}
+
+__global__ void rndm(float *x, int m, curandState *state) {
+  uint myId = blockDim.x * blockIdx.x + threadIdx.x;
+  for(int i = 0; i < m; i++)
+    x[myId + i] = curand(&state[myId]);
+}
+
+void do_rndm(void *void_arg) {
+  struct kernel_arg *argk = (struct kernel_arg *)(void_arg);
+  printf("RUNNING RNDM nblks=%d tpb=%d\n", argk->nblks, argk->tpb);
+
+  setup_kernel<<<1,argk->n>>>(argk->n, argk->dev_randState);
+  cudaDeviceSynchronize();
+
+  rndm<<<argk->nblks,argk->tpb>>>(argk->v, argk->m, argk->dev_randState);
+  cudaDeviceSynchronize();
+}
 
 /************************
 *  Rest of Code

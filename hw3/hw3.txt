@@ -14,7 +14,6 @@ GPU is a GeForce GTX 550 Ti supporing CUDA level 2.1
   clock rate = 1800000
 Max Threads per Block = 1024
 
-================================================================================
 Findings:
 3 * m * n = Total Floating Point Operations
 3 * 50 * 65535 * 1024 = 10.07 GFlops
@@ -24,6 +23,8 @@ Findings:
 I found that the best performance came from maxing out the number of blocks per
 grid and threads per block. This makes sense since logistic map performs a
 map-type operation with minimal thread-divergence.
+
+================================================================================
 
 2A)
 
@@ -39,4 +40,27 @@ Max Threads per Block = 1024
 mean(T) =  1.001e-01, std(T) =  5.395e-05
 
 2C)
+
+================================================================================
+
+3B)
+
+Using 65535 Blocks and 1024 Threads per Block, maxing out the system.
+
+3C)
+
+Results:
+u8b8@lin13:hw3$ ./hw3timing nblks=65535 tpb=1024 m=60
+GPU is a GeForce GTX 550 Ti supporing CUDA level 2.1
+  It has 4 SMs and a warp size of 32
+  sharedMemPerBlock = 49152, regsPerBlock = 32768
+  clock rate = 1800000
+Max Threads per Block = 1024
+mean(T) =  1.090e-01, std(T) =  1.882e-05
+
+Findings:
+65536 * 1024 * 60 = 4,026,531,840 Random Numbers in 0.109 seconds.
+We are able to generate 3.69e10 Random Numbers a second.
+
+3D)
 
