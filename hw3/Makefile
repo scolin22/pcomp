@@ -17,8 +17,11 @@ hw3: hw3.o
 timing: timing.o $(OBJ)
 	$(NVCC) $(CFLAGS) timing.o $(OBJ) $(LDFLAGS) -o timing
 
+hw3timing: hw3timing.o $(OBJ)
+	$(NVCC) $(CFLAGS) hw3timing.o $(OBJ) $(LDFLAGS) -o hw3timing
+
 clean:
-	$(RM) *.o perc examples timing
+	$(RM) *.o perc examples timing hw3 hw3timing
 
 
 .SUFFIXES: .c .cu .o

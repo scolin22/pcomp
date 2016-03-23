@@ -124,7 +124,6 @@ int main(int argc, char **argv) {
   uint m = (argc >= 4 && what == LOGMAP) ? atoi(argv[3]) : 0;
   float *x, *y, *z, *z_ref;
   float *dev_x, *dev_y, *dev_z;
-  float a;
   cudaDeviceProp prop;
 
   int ndev;
