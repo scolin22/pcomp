@@ -11,6 +11,9 @@ perc: perc.o $(OBJ)
 examples: examples.o
 	$(NVCC) $(CFLAGS) examples.o $(LDFLAGS) -o examples
 
+hw3: hw3.o
+	$(NVCC) $(CFLAGS) hw3.o $(LDFLAGS) -o hw3
+
 timing: timing.o $(OBJ)
 	$(NVCC) $(CFLAGS) timing.o $(OBJ) $(LDFLAGS) -o timing
 

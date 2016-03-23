@@ -3,50 +3,14 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 
-#define SAXPY 1
-#define VECSUM 2
-#define REDUCE_SUM 3
-#define DOTPROD 4
-#define LOGMAP 5
-#define NORM 6
-#define PERC 7
-#define DEFAULT_TEST REDUCE_SUM
+#define LOGMAP 1
+#define NORM 2
+#define PERC 3
+#define DEFAULT_TEST LOGMAP
 
 #define ALPHA 1.0f
 
-/************************
-*  saxpy
-************************/
-
-__global__ void saxpy(uint n, float a, float *x, float *y) {
-  uint myId = blockDim.x*blockIdx.x + threadIdx.x; // nvcc built-ins
-  if(myId < n)
-    y[myId] = a*x[myId] + y[myId];
-  }
-
-void saxpy_ref(uint n, float a, float *x, float *y, float *z) {
-  for(int i = 0; i < n; i++)
-    z[i] = a*x[i] + y[i];
-}
-
-
-/***********************************************************
-*  vecadd: really just a simple case of saxpy, with a = 1
-*          to be non-conformists, we write the sum into a
-*          result vector rather than computing it in-place
-************************************************************/
-
-__global__ void vecadd(uint n, float *x, float *y, float *z) {
-  uint myId = blockDim.x*blockIdx.x + threadIdx.x;
-  if(myId < n)
-    z[myId] = x[myId] + y[myId];
-}
-
-void vecadd_ref(uint n, float *x, float *y, float *z) {
-  for(int i = 0; i < n; i++)
-    z[i] = x[i] + y[i];
-}
-
+// CITATION: Code snippets taken from examples.cu by Mark
 /**************************************************************
  *  reduce_sum: compute the sum of the elements of an array
  *    Simple version: we only handle one block of threads
@@ -64,37 +28,6 @@ __device__ void reduce_sum_dev(uint n, float *x) {
 
 __global__ void reduce_sum(uint n, float *x) {
   reduce_sum_dev(n, x);
-}
-
-float reduce_sum_ref(uint n, float *x) {
-  float sum = 0.0;
-  for(int i = 0; i < n; i++)
-    sum += x[i];
-  return(sum);
-}
-
-/******************************
-*  dotprod: just like it sounds
-*    Simple version: we only handle one block of threads
-*******************************/
-
-__global__ void dotprod(uint n, float *x, float *y, float *z) {
-  uint blockBase = blockDim.x * blockIdx.x;
-  uint myId = blockBase + threadIdx.x;
-  uint m = min(blockDim.x, n - blockBase);
-
-  if(myId < n)
-    x[myId] *= y[myId];
-  reduce_sum_dev(m, &(x[blockBase]));
-  if((myId < n) && (threadIdx.x == 0))
-    z[blockIdx.x] = x[myId];
-}
-
-float dotprod_ref(uint n, float *x, float *y) {
-  float sum = 0.0;
-  for(int i = 0; i < n; i++)
-    sum += x[i] * y[i];
-  return(sum);
 }
 
 /************************
@@ -161,14 +94,6 @@ __global__ void rndm(float *x, int m, curandState *state) {
   for(int i = 0; i < m; i++)
     x[myId + i] = curand(&state[myId]);
 }
-
-
-/********************************************************************
- *  dotprod2: just like it sounds
- *    First phase of a dotprod.  Each block computes its part of the
- *    dot-product and stores the result in the z array.  A subsequent
- *    launch of the reduce_sum kernel completes the calculation.
- ********************************************************************/
 
 /*****************************************************
 *  print_vec: print the first few elements of a vector
@@ -239,47 +164,6 @@ int main(int argc, char **argv) {
   cudaMemcpy(dev_y, y, size, cudaMemcpyHostToDevice);
 
   switch(what) {
-    case SAXPY:
-      a = 3.0;
-      saxpy<<<ceil(n/256.0),256>>>(n, a, dev_x, dev_y);
-      printf("a: size = %d, z=%016llx, dev_y=%016llx\n", size, z, dev_y);
-      cudaMemcpy(z, dev_y, size, cudaMemcpyDeviceToHost);
-      printf("b\n");
-      saxpy_ref(n, a, x, y, z_ref);
-      break;
-    case VECSUM:
-      vecadd<<<ceil(n/256.0),256>>>(n, dev_x, dev_y, dev_z);
-      cudaMemcpy(z, dev_z, size, cudaMemcpyDeviceToHost);
-      vecadd_ref(n, x, y, z_ref);
-      break;
-    case REDUCE_SUM:
-      // __synchronize() only works within a single thread block.
-      if(n > prop.maxThreadsPerBlock) {
-        fprintf(stderr, "reduce_sum: array size too big, max = %d\n",
-                prop.maxThreadsPerBlock);
-        exit(-1);
-      }
-      reduce_sum<<<1,n>>>(n, dev_x);
-      cudaMemcpy(z, dev_x, sizeof(float), cudaMemcpyDeviceToHost);
-      z_ref[0] = reduce_sum_ref(n, x);
-      nn = 1;
-      break;
-    case DOTPROD:
-      uint blksize;
-      uint nblks;
-      blksize = prop.maxThreadsPerBlock;
-      nblks = ceil(((float)(n))/((float)(blksize)));
-      if(nblks > blksize) {
-        fprintf(stderr, "dotprod: array size too big, max = %d\n",
-                blksize*blksize);
-        exit(-1);
-      }
-      dotprod<<<nblks,blksize>>>(n, dev_x, dev_y, dev_z);
-      reduce_sum<<<1,nblks>>>(nblks, dev_z);
-      cudaMemcpy(z, dev_z, sizeof(float), cudaMemcpyDeviceToHost);
-      z_ref[0] = dotprod_ref(n, x, y);
-      nn = 1;
-      break;
     case LOGMAP:
       logmap<<<ceil(n/256.0),256>>>(dev_x, n, m);
       printf("a: size = %d, z=%016llx dev_x=%016llx\n", size, z, dev_x);
@@ -296,7 +180,7 @@ int main(int argc, char **argv) {
       nn = 1;
       break;
     case PERC:
-
+      break;
     default:
       fprintf(stderr, "ERROR: unknown test case -- %d\n", what);
       exit(-1);
