@@ -22,7 +22,7 @@ static void HandleError( cudaError_t err,
 // struct for passing arguments through time_it_run to our kernel functions
 struct kernel_arg {
   uint n;
-  float *v;
+  float *v, *z;
   int m, nblks, tpb, warpSize, whichKernel;
 };
 
@@ -47,12 +47,58 @@ void do_logmap(void *void_arg) {
   cudaDeviceSynchronize();
 }
 
+/************************
+*  Change by Colin Stone, Rest taken from examples.cu by Mark
+*  norm
+************************/
+
+__device__ void reduce_sum_dev(uint n, float *x) {
+  uint myId = threadIdx.x;
+  for(uint m = n >> 1; m > 0; m = n >> 1) {
+    n -= m;
+    __syncthreads();
+    if(myId < m)
+      x[myId] += x[myId+n];
+  }
+}
+
+__global__ void norm(float *x, int n, float *z) {
+  uint i = blockDim.x * blockIdx.x + threadIdx.x;
+  uint blockBase = blockDim.x * blockIdx.x;
+  uint m = min(blockDim.x, n - blockBase);
+
+  if (i < n)
+    x[i] = pow(x[i], 2);
+
+  __syncthreads();
+
+  reduce_sum_dev(m, &(x[blockBase]));
+
+  if (i < n && threadIdx.x == 0)
+    z[blockIdx.x] = sqrt(x[i]);
+}
+
+void do_norm(void *void_arg) {
+  struct kernel_arg *argk = (struct kernel_arg *)(void_arg);
+  printf("RUNNING NORM nblks=%d tpb=%d\n", argk->nblks, argk->tpb);
+  norm<<<argk->nblks,argk->tpb>>>(argk->v, argk->n, argk->z);
+  cudaDeviceSynchronize();
+  if (argk->nblks > 1)
+    norm<<<1,argk->nblks>>>(argk->z, argk->nblks, argk->z);
+  cudaDeviceSynchronize();
+}
+
+
+/************************
+*  Rest of Code
+************************/
+
 int main(int argc, char **argv) {
   int nblks = 24; // default number of blocks in the grid
   int m = 1000;   // default number of "rounds" in kernel
   int tpb = 256;  // default threads per block
   int whichKernel = 1; // default kernel to run
-  float *v, *dev_v;
+  float *v, *dev_v, *dev_z;
   cudaDeviceProp prop;
   struct kernel_arg argk;
   struct time_it_raw *tr = time_it_create(10);
@@ -116,10 +162,13 @@ int main(int argc, char **argv) {
   // allocate and initialize dev_v
   HANDLE_ERROR(cudaMalloc((void **)(&dev_v), szv));
   HANDLE_ERROR(cudaMemcpy(dev_v, v, szv, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMalloc((void **)(&dev_z), szv));
+  HANDLE_ERROR(cudaMemcpy(dev_z, v, szv, cudaMemcpyHostToDevice));
 
   // initialize argk
   argk.n = nv;
   argk.v = dev_v;
+  argk.z = dev_z;
   argk.m = m;
   argk.nblks = nblks;
   argk.tpb = tpb;
