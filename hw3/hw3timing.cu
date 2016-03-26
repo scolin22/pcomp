@@ -24,9 +24,34 @@ static void HandleError( cudaError_t err,
 struct kernel_arg {
   uint n;
   float *v, *z;
+  uint *a;
   int m, nblks, tpb, warpSize, whichKernel;
   curandState *dev_randState;
 };
+
+/*****************************************************
+*  print_vec: print the first few elements of a vector
+******************************************************/
+
+void print_vec(float *x, uint n, const char *fmt, const char *who) {
+  printf("%s = ", who);
+  for(int i = 0; i < n; i++) {
+    if(i > 0) printf(", ");
+    printf(fmt, x[i]);
+  }
+  if(n > 10) printf(", ...");
+  printf("\n");
+}
+
+void print_vec(uint *x, uint n, const char *fmt, const char *who) {
+  printf("%s = ", who);
+  for(int i = 0; i < n; i++) {
+    if(i > 0) printf(", ");
+    printf(fmt, x[i]);
+  }
+  if(n > 10) printf(", ...");
+  printf("\n");
+}
 
 /************************
 *  Change by Colin Stone, Rest taken from examples.cu by Mark
@@ -101,21 +126,29 @@ __global__ void setup_kernel(uint n, curandState *state) {
     curand_init(1234, myId, 0, &state[myId]);
 }
 
-__global__ void rndm(float *x, int m, curandState *state) {
-  uint myId = blockDim.x * blockIdx.x + threadIdx.x;
-  for(int i = 0; i < m; i++)
-    x[myId + i] = curand(&state[myId]);
+__global__ void rndm(uint *a, int m, curandState *state) {
+  uint i = blockDim.x * blockIdx.x + threadIdx.x;
+  for(int j = 0; j < m; j++) {
+    // printf("idx=%d seed=%d\n", i*m+j, i);
+    a[i*m + j] = curand_uniform(&state[i])*1000;
+  }
 }
 
 void do_rndm(void *void_arg) {
   struct kernel_arg *argk = (struct kernel_arg *)(void_arg);
-  printf("RUNNING RNDM nblks=%d tpb=%d\n", argk->nblks, argk->tpb);
+  printf("RUNNING RNDM nblks=%d tpb=%d m=%d\n", argk->nblks, argk->tpb, argk->m);
 
-  setup_kernel<<<1,argk->n>>>(argk->n, argk->dev_randState);
+  setup_kernel<<<argk->nblks,argk->n>>>(argk->n, argk->dev_randState);
   cudaDeviceSynchronize();
 
-  rndm<<<argk->nblks,argk->tpb>>>(argk->v, argk->m, argk->dev_randState);
+  rndm<<<argk->nblks,argk->tpb>>>(argk->a, argk->m, argk->dev_randState);
   cudaDeviceSynchronize();
+
+  int n = argk->n*argk->m;
+  int size = n*sizeof(uint);
+  uint *a = (uint *)malloc(size);
+  cudaMemcpy(a, argk->a, size, cudaMemcpyDeviceToHost);
+  print_vec(a, min(10, n), "%d", "a");
 }
 
 /************************
@@ -128,6 +161,8 @@ int main(int argc, char **argv) {
   int tpb = 256;  // default threads per block
   int whichKernel = 1; // default kernel to run
   float *v, *dev_v, *dev_z;
+  uint *dev_a;
+  curandState *dev_randState;
   cudaDeviceProp prop;
   struct kernel_arg argk;
   struct time_it_raw *tr = time_it_create(10);
@@ -192,20 +227,23 @@ int main(int argc, char **argv) {
   HANDLE_ERROR(cudaMalloc((void **)(&dev_v), szv));
   HANDLE_ERROR(cudaMemcpy(dev_v, v, szv, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMalloc((void **)(&dev_z), szv));
-  HANDLE_ERROR(cudaMemcpy(dev_z, v, szv, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMalloc((void **)(&dev_a), szv*m));
+  HANDLE_ERROR(cudaMalloc((void **)(&dev_randState), nv*sizeof(curandState))); //sizeof(curandState) = 48
 
   // initialize argk
   argk.n = nv;
   argk.v = dev_v;
   argk.z = dev_z;
+  argk.a = dev_a;
   argk.m = m;
   argk.nblks = nblks;
   argk.tpb = tpb;
   argk.warpSize = prop.warpSize;
   argk.whichKernel = whichKernel;
+  argk.dev_randState = dev_randState;
 
   // run the kernel and report timing info
-  time_it_run(tr, do_logmap, (void *)(&argk));
+  time_it_run(tr, do_rndm, (void *)(&argk));
   time_it_get_stats(tr, &stats);
   HANDLE_ERROR(cudaMemcpy(v, dev_v, szv, cudaMemcpyDeviceToHost));
   printf("mean(T) = %10.3e, std(T) = %10.3e\n", stats.mean, stats.std);

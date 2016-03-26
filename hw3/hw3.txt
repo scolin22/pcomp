@@ -7,16 +7,18 @@ Using 65535 Blocks and 1024 Threads per Block, maxing out the system.
 1B)
 
 Results:
-u8b8@lin13:hw3$ ./hw3timing nblks=65535 tpb=1024 m=50
+u8b8@lin13:hw3$ ./hw3timing nblks=65535 tpb=1024 m=60
 GPU is a GeForce GTX 550 Ti supporing CUDA level 2.1
   It has 4 SMs and a warp size of 32
   sharedMemPerBlock = 49152, regsPerBlock = 32768
   clock rate = 1800000
 Max Threads per Block = 1024
+mean(T) =  1.090e-01, std(T) =  1.107e-05
 
 Findings:
 3 * m * n = Total Floating Point Operations
-3 * 50 * 65535 * 1024 = 10.07 GFlops
+3 * 60 * 65535 * 1024 = 12.08 GFlops / 1.090e-01 seconds
+= 110.8 GFlops / second
 
 1C)
 

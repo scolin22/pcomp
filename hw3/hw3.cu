@@ -89,10 +89,10 @@ __global__ void setup_kernel(uint n, curandState *state) {
     curand_init(1234, myId, 0, &state[myId]);
 }
 
-__global__ void rndm(float *x, int m, curandState *state) {
-  uint myId = blockDim.x * blockIdx.x + threadIdx.x;
-  for(int i = 0; i < m; i++)
-    x[myId + i] = curand(&state[myId]);
+__global__ void rndm(uint *a, int m, curandState *state) {
+  uint i = blockDim.x * blockIdx.x + threadIdx.x;
+  for(int j = 0; j < m; j++)
+    a[i*m + j] = curand_uniform(&state[i])*1000;
 }
 
 /*****************************************************
@@ -100,6 +100,16 @@ __global__ void rndm(float *x, int m, curandState *state) {
 ******************************************************/
 
 void print_vec(float *x, uint n, const char *fmt, const char *who) {
+  printf("%s = ", who);
+  for(int i = 0; i < n; i++) {
+    if(i > 0) printf(", ");
+    printf(fmt, x[i]);
+  }
+  if(n > 10) printf(", ...");
+  printf("\n");
+}
+
+void print_vec(uint *x, uint n, const char *fmt, const char *who) {
   printf("%s = ", who);
   for(int i = 0; i < n; i++) {
     if(i > 0) printf(", ");
@@ -124,6 +134,8 @@ int main(int argc, char **argv) {
   uint m = (argc >= 4 && what == LOGMAP) ? atoi(argv[3]) : 0;
   float *x, *y, *z, *z_ref;
   float *dev_x, *dev_y, *dev_z;
+  uint *a, *dev_a;
+  curandState *dev_randState;
   cudaDeviceProp prop;
 
   int ndev;
@@ -138,6 +150,7 @@ int main(int argc, char **argv) {
   x  = (float *)malloc(size);
   y  = (float *)malloc(size);
   z  = (float *)malloc(size);
+  a  = (uint *)malloc(size);
   z_ref = (float *)malloc(size);
 
   // Use a logistic map to make some pseudo-random numbers
@@ -159,8 +172,10 @@ int main(int argc, char **argv) {
   cudaMalloc((void**)(&dev_x), size);
   cudaMalloc((void**)(&dev_y), size);
   cudaMalloc((void**)(&dev_z), size);
+  cudaMalloc((void**)(&dev_a), size);
   cudaMemcpy(dev_x, x, size, cudaMemcpyHostToDevice);
   cudaMemcpy(dev_y, y, size, cudaMemcpyHostToDevice);
+  cudaMalloc((void **)(&dev_randState), n*sizeof(curandState));
 
   switch(what) {
     case LOGMAP:
@@ -179,6 +194,10 @@ int main(int argc, char **argv) {
       nn = 1;
       break;
     case PERC:
+      setup_kernel<<<ceil(n/1024.0),1024>>>(n, dev_randState);
+      rndm<<<ceil(n/1024.0),1024>>>(dev_a, 1, dev_randState);
+      cudaMemcpy(a, dev_a, size, cudaMemcpyDeviceToHost);
+      print_vec(a, min(10, nn), "%d", "a");
       break;
     default:
       fprintf(stderr, "ERROR: unknown test case -- %d\n", what);
