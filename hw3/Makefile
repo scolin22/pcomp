@@ -11,17 +11,17 @@ perc: perc.o $(OBJ)
 examples: examples.o
 	$(NVCC) $(CFLAGS) examples.o $(LDFLAGS) -o examples
 
-hw3: hw3.o
-	$(NVCC) $(CFLAGS) hw3.o $(LDFLAGS) -o hw3
+hw3tests: hw3tests.o
+	$(NVCC) $(CFLAGS) hw3tests.o $(LDFLAGS) -o hw3tests
 
 timing: timing.o $(OBJ)
 	$(NVCC) $(CFLAGS) timing.o $(OBJ) $(LDFLAGS) -o timing
 
-hw3timing: hw3timing.o $(OBJ)
-	$(NVCC) $(CFLAGS) hw3timing.o $(OBJ) $(LDFLAGS) -o hw3timing
+hw3: hw3.o $(OBJ)
+	$(NVCC) $(CFLAGS) hw3.o $(OBJ) $(LDFLAGS) -o hw3
 
 clean:
-	$(RM) *.o perc examples timing hw3 hw3timing
+	$(RM) *.o perc examples timing hw3tests hw3
 
 
 .SUFFIXES: .c .cu .o

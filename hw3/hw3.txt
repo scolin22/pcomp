@@ -22,7 +22,7 @@ Findings:
 
 1C)
 
-I found that the best performance came from maxing out the number of blocks per
+I find that the best performance came from maxing out the number of blocks per
 grid and threads per block. This makes sense since logistic map performs a
 map-type operation with minimal thread-divergence.
 
@@ -33,36 +33,46 @@ map-type operation with minimal thread-divergence.
 Vary number of Blocks and while maxing at 1024 Threads per Block.
 
 2B)
-u8b8@lin13:hw3$ ./hw3timing nblks=4000 tpb=1024
+u8b8@lin13:hw3$ ./hw3timing nblks=16384 tpb=1024
 GPU is a GeForce GTX 550 Ti supporing CUDA level 2.1
   It has 4 SMs and a warp size of 32
   sharedMemPerBlock = 49152, regsPerBlock = 32768
   clock rate = 1800000
 Max Threads per Block = 1024
-mean(T) =  1.001e-01, std(T) =  5.395e-05
+mean(T) =  2.893e-02, std(T) =  3.071e-04
+
+GB/s = ((num_Reads+num_Writes) * sizeof(float) / runtime) / 1e9;
+= 2*(16384*1024 + 1024*1024 + 1024) * 4 / 2.893e-02 / 1e9;
+= 4.9296 GB/s
 
 2C)
-
+For this implementation of reduce and norm calculation, it would have been
+the most efficient to minimize reads and writes from global memory.
+Electing to call norm multiple times for log_1024(num_threads) was a
+straightforward implementation. However it comes at the tradeof of
+more memory accesses and kernel launches.
 ================================================================================
 
 3B)
 
-Using 65535 Blocks and 1024 Threads per Block, maxing out the system.
+Using 1024 Blocks and 1024 Threads per Block, maxing out memory.
 
 3C)
 
 Results:
-u8b8@lin13:hw3$ ./hw3timing nblks=65535 tpb=1024 m=60
+u8b8@lin13:hw3$ ./hw3timing nblks=1024 tpb=1024 m=50
 GPU is a GeForce GTX 550 Ti supporing CUDA level 2.1
   It has 4 SMs and a warp size of 32
   sharedMemPerBlock = 49152, regsPerBlock = 32768
   clock rate = 1800000
 Max Threads per Block = 1024
-mean(T) =  1.090e-01, std(T) =  1.882e-05
+mean(T) =  1.081e-01, std(T) =  1.803e-04
 
 Findings:
-65536 * 1024 * 60 = 4,026,531,840 Random Numbers in 0.109 seconds.
-We are able to generate 3.69e10 Random Numbers a second.
+1024 * 1024 * 50 = 52,428,800 Random Numbers in 1.081e-01 seconds.
+I am able to generate 485,002,775 Random Numbers a second.
 
 3D)
-
+I kept my implement efficient by ensuring a minimal number of memory
+accesses. I find that the limiting factor is the number of curandState objects created. Therefore, getting perfomance out of maxing out m,
+rather than total number of threads.
