@@ -1,0 +1,9 @@
+rndb kernel
+Reusing myRandState stored in local memory was an improvement over
+reusing randState stored in global memory.
+
+perc kernel
+Whenever possible, I copied variables in global/shared memory to
+local memory such as the shared data. This comes with a cost of extra
+memory reads, but savings come from repeated read and writes of local
+memory.
