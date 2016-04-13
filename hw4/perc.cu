@@ -99,7 +99,7 @@ struct kernel_arg {
        rand_n;      // how many uints of random bits per thread
   randstate_t *dev_randState; // prng state
   uint *dev_randBits; // put the uints of random bits here
-     
+
   // stuff for percolation
   uint perc_m; // number of percolation generations to simulate
   double p;     // vertex probability
@@ -130,6 +130,7 @@ __global__ void rndb(uint n, uint m, uint q, randstate_t *randState, uint *rbits
       uint w = 0;
       for(int b = 0; b < BITS_PER_UINT; b++) // make a word of random bits
         // TODO: write this
+        w |= (curand_uniform(myRandState) <= q/UINT_MAX) << b;
       rbits[n_threadsTotal*j + myId] = w;
     }
   }
@@ -146,6 +147,7 @@ __global__ void rndb(uint n, uint m, uint q, randstate_t *randState, uint *rbits
  */
 __global__ void perc(uint m, uint *randBits, uint *v) {
   // TODO: declare a array to share data between threads
+  __shared__ uint state[blockDim.x];
   uint myId = threadIdx.x;
   uint left = (myId == 0) ? (WARPSIZE-1) : (myId-1);
   uint *rb = &(randBits[0]);
@@ -153,18 +155,23 @@ __global__ void perc(uint m, uint *randBits, uint *v) {
   uint64_t x = UINT64_MAX;
   for(int j = 0; j < m/BITS_PER_UINT; j++) {
      // TODO: write my state to shared memory
+    state[myId] = v[myId];
      // TODO: read my left neighbour's state
+    uint left_state = v[left];
      // TODO: make a 64 bit word from my state and my neighbour's state
+    x = left_state << BITS_PER_UINT | state[myId];
     for(int k = 0; k < BITS_PER_UINT; k++) {
       // TODO: get the random bits for me and my neighbour
+      uint r = rb[left] << BITS_PER_UINT | rb[myId];
       // TODO: update my state, and my representation of my neighbour's state.
       //   Note: This "loses" on state of my left-neighbour each cycle because
-      //     we don't know it's left neighbour.  That's why we can do this for
+      //     we don't know its left neighbour.  That's why we can do this for
       //     BITS_PER_UINT steps, and then have to coordinate through shared
       //     memory.  Note that we need to read the global memory to get
       //     random bits with each iteration of this inner loop.  Also,
       //     we need to update our copy of the left-neighbour using the
       //     same random bits that our left neighbour uses.
+      x = (x | (x >> 1)) & r;
     }
   }
   v[myId] = x & (UINT_MAX);
@@ -198,7 +205,7 @@ uint count_survivors(kernel_arg *argk) {
 //           states or the array of random bits from the rndb kernel.
 //     3.  It's OK if we run time_rndb again -- we'll just run the
 //           percolation kernel with different random bits.
-//   Note that you can add copies of 
+//   Note that you can add copies of
 //     HANDLE_ERROR(cudaDeviceSynchronize());
 //   after each kernel launch when debugging -- I found that makes
 //   it easier to track down bugs.
