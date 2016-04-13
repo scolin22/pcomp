@@ -130,7 +130,7 @@ __global__ void rndb(uint n, uint m, uint q, randstate_t *randState, uint *rbits
       uint w = 0;
       for(int b = 0; b < BITS_PER_UINT; b++) // make a word of random bits
         // TODO: write this
-        w |= (curand_uniform(myRandState) <= q/UINT_MAX) << b;
+        w |= (curand(myRandState) <= q) << b;
       rbits[n_threadsTotal*j + myId] = w;
     }
   }
@@ -147,7 +147,7 @@ __global__ void rndb(uint n, uint m, uint q, randstate_t *randState, uint *rbits
  */
 __global__ void perc(uint m, uint *randBits, uint *v) {
   // TODO: declare a array to share data between threads
-  __shared__ uint state[blockDim.x];
+  __shared__ uint state[WARPSIZE];
   uint myId = threadIdx.x;
   uint left = (myId == 0) ? (WARPSIZE-1) : (myId-1);
   uint *rb = &(randBits[0]);
@@ -155,14 +155,16 @@ __global__ void perc(uint m, uint *randBits, uint *v) {
   uint64_t x = UINT64_MAX;
   for(int j = 0; j < m/BITS_PER_UINT; j++) {
      // TODO: write my state to shared memory
-    state[myId] = v[myId];
+    uint my_state = x & (UINT_MAX);
+    state[myId] = my_state;
      // TODO: read my left neighbour's state
-    uint left_state = v[left];
+    uint left_state = state[left];
      // TODO: make a 64 bit word from my state and my neighbour's state
-    x = left_state << BITS_PER_UINT | state[myId];
+    x = (uint64_t) left_state << BITS_PER_UINT | my_state;
     for(int k = 0; k < BITS_PER_UINT; k++) {
       // TODO: get the random bits for me and my neighbour
-      uint r = rb[left] << BITS_PER_UINT | rb[myId];
+      int row = j * BITS_PER_UINT + k;
+      uint64_t r = (uint64_t)rb[row * WARPSIZE + left] << BITS_PER_UINT | rb[row * WARPSIZE + myId];
       // TODO: update my state, and my representation of my neighbour's state.
       //   Note: This "loses" on state of my left-neighbour each cycle because
       //     we don't know its left neighbour.  That's why we can do this for
